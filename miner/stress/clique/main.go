@@ -148,7 +148,11 @@ func main() {
 // signer and faucet accounts.
 func makeGenesis(faucets []*ecdsa.PrivateKey, sealers []*ecdsa.PrivateKey) *core.Genesis {
 	// Create a Clique network based off of the Rinkeby config
-	genesis := core.DefaultRinkebyGenesisBlock()
+	// genesis := core.DefaultRinkebyGenesisBlock()
+	genesis := &core.Genesis{}
+	if genesis != nil {
+		panic("DO NOT USE THIS!")
+	}
 	genesis.GasLimit = 25000000
 
 	genesis.Config.ChainID = big.NewInt(18)
