@@ -27,6 +27,7 @@ import (
 
 // Genesis hashes to enforce below configs on.
 var (
+	// TODO yqq: 2022-08-09 change genesisHash
 	MainnetGenesisHash = common.HexToHash("0x5751d1772ebc82d52d19d96157bb3f13ca8417217e3c0913adf15f04eb4cb144")
 	TestnetGenesisHash = common.HexToHash("0xb24b1124276b1250ad3b2c02623677bce3e76c1539f76dcdfe4c27ab991c1dad")
 )
@@ -54,6 +55,7 @@ var (
 		PetersburgBlock:     big.NewInt(0),
 		IstanbulBlock:       big.NewInt(0),
 		MuirGlacierBlock:    nil,
+		// TODO yqq 2022-08-09: change this to activate these hard-forks on our chain begining.
 		RedCoastBlock:       big.NewInt(6618800),
 		BerlinBlock:         big.NewInt(8577000),
 		LondonBlock:         big.NewInt(8577000),
@@ -82,6 +84,7 @@ var (
 		PetersburgBlock:     big.NewInt(0),
 		IstanbulBlock:       big.NewInt(0),
 		MuirGlacierBlock:    nil,
+		// TODO yqq 2022-08-09: change this to activate these hard-forks on our chain begining.
 		RedCoastBlock:       big.NewInt(6072600),
 		BerlinBlock:         big.NewInt(8290000),
 		LondonBlock:         big.NewInt(8290000),
@@ -212,6 +215,7 @@ type ChainConfig struct {
 	// the network that triggers the consensus upgrade.
 	TerminalTotalDifficulty *big.Int `json:"terminalTotalDifficulty,omitempty"`
 
+	// TODO yqq 2022-08-09: note this 
 	RedCoastBlock *big.Int `json:"redCoastBlock,omitempty"` // RedCoast switch block (nil = no fork, set value ≥ 2 to activate it)
 	SophonBlock   *big.Int `json:"sophonBlock,omitempty"`   // Sophon switch block (nil = no fork, set > RedCoastBlock to activate it)
 

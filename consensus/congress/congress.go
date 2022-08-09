@@ -1198,6 +1198,7 @@ func (c *Congress) IsSysTransaction(sender common.Address, tx *types.Transaction
 //
 // This will queries the system Developers contract, by DIRECTLY to get the target slot value of the contract,
 // it means that it's strongly relative to the layout of the Developers contract's state variables
+// TODO yqq 2022-08-09: note this
 func (c *Congress) CanCreate(state consensus.StateReader, addr common.Address, height *big.Int) bool {
 	if c.chainConfig.IsRedCoast(height) && c.config.EnableDevVerification {
 		if isDeveloperVerificationEnabled(state) {
@@ -1447,6 +1448,9 @@ func (c *Congress) commonCallContract(header *types.Header, statedb *state.State
 // according to [Layout of State Variables in Storage](https://docs.soliditylang.org/en/v0.8.4/internals/layout_in_storage.html),
 // and after optimizer enabled, the `initialized`, `enabled` and `admin` will be packed, and stores at slot 0,
 // `pendingAdmin` stores at slot 1, and the position for `devs` is 2.
+//
+// TODO yqq 2022-08-09:Excellent! We need this feature in our Peculiar chain !
+// NOTE yqq 2022-08-09: The storage layout is bases on solidity optimizer, so we need to note this.
 func isDeveloperVerificationEnabled(state consensus.StateReader) bool {
 	compactValue := state.GetState(systemcontract.AddressListContractAddr, common.Hash{})
 	// Layout of slot 0:

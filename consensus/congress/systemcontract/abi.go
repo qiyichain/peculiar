@@ -524,6 +524,8 @@ const PunishV1InteractiveABI = `[
 // according to [Layout of State Variables in Storage](https://docs.soliditylang.org/en/v0.8.4/internals/layout_in_storage.html),
 // and after optimizer enabled, the `initialized`, `enabled` and `admin` will be packed, and stores at slot 0,
 // `pendingAdmin` stores at slot 1, so the position for `devs` is 2.
+//
+// TODO yqq 2022-08-09: note this !
 const DevMappingPosition = 2
 
 var (
