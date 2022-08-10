@@ -59,7 +59,7 @@ var (
 		// RedCoastBlock:       big.NewInt(6618800),
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
-		SophonBlock:         big.NewInt(0),
+		// SophonBlock:         big.NewInt(0),
 		ArrowGlacierBlock:   nil,
 
 		Congress: &CongressConfig{
@@ -88,7 +88,7 @@ var (
 		// RedCoastBlock:       big.NewInt(6072600),
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(0),
-		SophonBlock:         big.NewInt(0),
+		// SophonBlock:         big.NewInt(0),
 		Congress: &CongressConfig{
 			Period: 3,
 			Epoch:  200,
@@ -119,18 +119,18 @@ var (
 	//
 	// This configuration is intentionally not using keyed fields to force anyone
 	// adding flags to the config to also have to set these fields.
-	AllEthashProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, new(EthashConfig), nil, nil}
+	AllEthashProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil,  new(EthashConfig), nil, nil}
 
 	// AllCliqueProtocolChanges contains every protocol change (EIPs) introduced
 	// and accepted by the Ethereum core developers into the Clique consensus.
 	//
 	// This configuration is intentionally not using keyed fields to force anyone
 	// adding flags to the config to also have to set these fields.
-	AllCliqueProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil,  nil, &CliqueConfig{Period: 0, Epoch: 30000}, nil}
+	AllCliqueProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil,   &CliqueConfig{Period: 0, Epoch: 30000}, nil}
 
-	AllCongressProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, big.NewInt(0),  nil, nil, &CongressConfig{Period: 0, Epoch: 30000}}
+	AllCongressProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil , nil, &CongressConfig{Period: 0, Epoch: 30000}}
 
-	TestChainConfig = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil,  new(EthashConfig), nil, nil}
+	TestChainConfig = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil,  new(EthashConfig), nil, nil}
 	TestRules       = TestChainConfig.Rules(new(big.Int))
 )
 
@@ -217,7 +217,7 @@ type ChainConfig struct {
 
 	// TODO yqq 2022-08-09: note this 
 	// RedCoastBlock *big.Int `json:"redCoastBlock,omitempty"` // RedCoast switch block (nil = no fork, set value ≥ 2 to activate it)
-	SophonBlock   *big.Int `json:"sophonBlock,omitempty"`   // Sophon switch block (nil = no fork, set > RedCoastBlock to activate it)
+	// SophonBlock   *big.Int `json:"sophonBlock,omitempty"`   // Sophon switch block (nil = no fork, set > RedCoastBlock to activate it)
 
 	// Various consensus engines
 	Ethash   *EthashConfig   `json:"ethash,omitempty"`
@@ -270,7 +270,7 @@ func (c *ChainConfig) String() string {
 	default:
 		engine = "unknown"
 	}
-	return fmt.Sprintf("{ChainID: %v Homestead: %v DAO: %v DAOSupport: %v EIP150: %v EIP155: %v EIP158: %v Byzantium: %v Constantinople: %v Petersburg: %v Istanbul: %v, Muir Glacier: %v, Berlin: %v, London: %v, Sophon: %v, Engine: %v}",
+	return fmt.Sprintf("{ChainID: %v Homestead: %v DAO: %v DAOSupport: %v EIP150: %v EIP155: %v EIP158: %v Byzantium: %v Constantinople: %v Petersburg: %v Istanbul: %v, Muir Glacier: %v, Berlin: %v, London: %v, Engine: %v}",
 		c.ChainID,
 		c.HomesteadBlock,
 		c.DAOForkBlock,
@@ -286,7 +286,7 @@ func (c *ChainConfig) String() string {
 		// c.RedCoastBlock,
 		c.BerlinBlock,
 		c.LondonBlock,
-		c.SophonBlock,
+		// c.SophonBlock,
 		engine,
 	)
 }
@@ -372,9 +372,9 @@ func (c *ChainConfig) IsTerminalPoWBlock(parentTotalDiff *big.Int, totalDiff *bi
 // }
 
 // IsSophon returns whether num represents a block number after the SophonBlock fork
-func (c *ChainConfig) IsSophon(num *big.Int) bool {
-	return isForked(c.SophonBlock, num)
-}
+// func (c *ChainConfig) IsSophon(num *big.Int) bool {
+// 	return isForked(c.SophonBlock, num)
+// }
 
 // CheckCompatible checks whether scheduled fork transitions have been imported
 // with a mismatching chain configuration.
@@ -440,7 +440,7 @@ func (c *ChainConfig) CheckConfigForkOrder() error {
 	lastFork = fork{}
 	for _, cur := range []fork{
 		// {name: "redCoastBlock", block: c.RedCoastBlock, minValue: big.NewInt(2)},
-		{name: "sophonBlock", block: c.SophonBlock},
+		// {name: "sophonBlock", block: c.SophonBlock},
 	} {
 		// check minimal fork block
 		if cur.block != nil && cur.minValue != nil {
@@ -516,9 +516,9 @@ func (c *ChainConfig) checkCompatible(newcfg *ChainConfig, head *big.Int) *Confi
 	if isForkIncompatible(c.LondonBlock, newcfg.LondonBlock, head) {
 		return newCompatError("London fork block", c.LondonBlock, newcfg.LondonBlock)
 	}
-	if isForkIncompatible(c.SophonBlock, newcfg.SophonBlock, head) {
-		return newCompatError("Sophon fork block", c.SophonBlock, newcfg.SophonBlock)
-	}
+	// if isForkIncompatible(c.SophonBlock, newcfg.SophonBlock, head) {
+	// 	return newCompatError("Sophon fork block", c.SophonBlock, newcfg.SophonBlock)
+	// }
 	if isForkIncompatible(c.ArrowGlacierBlock, newcfg.ArrowGlacierBlock, head) {
 		return newCompatError("Arrow Glacier fork block", c.ArrowGlacierBlock, newcfg.ArrowGlacierBlock)
 	}

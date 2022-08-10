@@ -125,7 +125,8 @@ func (c *Congress) executeProposal(chain consensus.ChainHeaderReader, header *ty
 	//make system governance transaction
 	nonce := state.GetNonce(c.validator)
 	amout := prop.Value
-	if c.chainConfig.IsSophon(header.Number) {
+	// if c.chainConfig.IsSophon(header.Number) {
+	if true {
 		// fix bug
 		amout = new(big.Int)
 	}

@@ -123,7 +123,7 @@ func TestCheckConfigForkOrder(t *testing.T) {
 		{new: TestChainConfig},
 		// {new: &ChainConfig{RedCoastBlock: big.NewInt(0)}, isErr: true},
 		// {new: &ChainConfig{RedCoastBlock: big.NewInt(1)}, isErr: true},
-		{new: &ChainConfig{SophonBlock: big.NewInt(3)}, isErr: true},
+		// {new: &ChainConfig{SophonBlock: big.NewInt(3)}, isErr: true},
 		// {new: &ChainConfig{RedCoastBlock: big.NewInt(2), SophonBlock: big.NewInt(2)}, isErr: true},
 	}
 	for _, tc := range tests {
