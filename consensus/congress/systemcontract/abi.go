@@ -546,8 +546,8 @@ var (
 	ProposalAddr             = common.HexToAddress("0x000000000000000000000000000000000000f002")
 	SysGovContractAddr       = common.HexToAddress("0x000000000000000000000000000000000000F003")
 	AddressListContractAddr  = common.HexToAddress("0x000000000000000000000000000000000000F004")
-	ValidatorsV1ContractAddr = common.HexToAddress("0x000000000000000000000000000000000000F005")
-	PunishV1ContractAddr     = common.HexToAddress("0x000000000000000000000000000000000000F006")
+	// ValidatorsV1ContractAddr = common.HexToAddress("0x000000000000000000000000000000000000F005")
+	// PunishV1ContractAddr     = common.HexToAddress("0x000000000000000000000000000000000000F006")
 	// SysGovToAddr is the To address for the system governance transaction, NOT contract address
 	SysGovToAddr = common.HexToAddress("0x000000000000000000000000000000000000ffff")
 
@@ -578,15 +578,15 @@ func GetInteractiveABI() map[string]abi.ABI {
 }
 
 func GetValidatorAddr(blockNum *big.Int, config *params.ChainConfig) *common.Address {
-	if config.IsRedCoast(blockNum) {
-		return &ValidatorsV1ContractAddr
-	}
+	// if config.IsRedCoast(blockNum) {
+	// 	return &ValidatorsV1ContractAddr
+	// }
 	return &ValidatorsContractAddr
 }
 
 func GetPunishAddr(blockNum *big.Int, config *params.ChainConfig) *common.Address {
-	if config.IsRedCoast(blockNum) {
-		return &PunishV1ContractAddr
-	}
+	// if config.IsRedCoast(blockNum) {
+	// 	return &PunishV1ContractAddr
+	// }
 	return &PunishContractAddr
 }

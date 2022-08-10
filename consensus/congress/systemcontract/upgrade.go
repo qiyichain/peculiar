@@ -40,8 +40,8 @@ func ApplySystemContractUpgrade(version SysContractVersion, state *state.StateDB
 		}
 	case SysContractV2:
 		sysContracts = []IUpgradeAction{
-			&hardForkAddressListV2{},
-			&hardForkValidatorsV2{},
+			// &hardForkAddressListV2{},
+			// &hardForkValidatorsV2{},
 		}
 	default:
 		log.Crit("unsupported SysContractVersion", "version", version)

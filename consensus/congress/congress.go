@@ -655,7 +655,7 @@ func (c *Congress) Finalize(chain consensus.ChainHeaderReader, header *types.Hea
 	}
 
 	//handle system governance Proposal
-	if chain.Config().IsRedCoast(header.Number) {
+	if chain.Config().IsSophon(header.Number) {
 		proposalCount, err := c.getPassedProposalCount(chain, header, state)
 		if err != nil {
 			return err
@@ -741,7 +741,7 @@ func (c *Congress) FinalizeAndAssemble(chain consensus.ChainHeaderReader, header
 	// Even if the miner is not `running`, it's still working,
 	// the 'miner.worker' will try to FinalizeAndAssemble a block,
 	// in this case, the signTxFn is not set. A `non-miner node` can't execute system governance proposal.
-	if c.signTxFn != nil && chain.Config().IsRedCoast(header.Number) {
+	if c.signTxFn != nil && chain.Config().IsSophon(header.Number) {
 		proposalCount, err := c.getPassedProposalCount(chain, header, state)
 		if err != nil {
 			return nil, nil, err
@@ -1168,9 +1168,9 @@ func encodeSigHeader(w io.Writer, header *types.Header) {
 }
 
 func (c *Congress) PreHandle(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB) error {
-	if c.chainConfig.RedCoastBlock != nil && c.chainConfig.RedCoastBlock.Cmp(header.Number) == 0 {
-		return systemcontract.ApplySystemContractUpgrade(systemcontract.SysContractV1, state, header, newChainContext(chain, c), c.chainConfig)
-	}
+	// if c.chainConfig.RedCoastBlock != nil && c.chainConfig.RedCoastBlock.Cmp(header.Number) == 0 {
+	// 	return systemcontract.ApplySystemContractUpgrade(systemcontract.SysContractV1, state, header, newChainContext(chain, c), c.chainConfig)
+	// }
 	if c.chainConfig.SophonBlock != nil && c.chainConfig.SophonBlock.Cmp(header.Number) == 0 {
 		return systemcontract.ApplySystemContractUpgrade(systemcontract.SysContractV2, state, header, newChainContext(chain, c), c.chainConfig)
 	}
@@ -1200,7 +1200,7 @@ func (c *Congress) IsSysTransaction(sender common.Address, tx *types.Transaction
 // it means that it's strongly relative to the layout of the Developers contract's state variables
 // TODO yqq 2022-08-09: note this
 func (c *Congress) CanCreate(state consensus.StateReader, addr common.Address, height *big.Int) bool {
-	if c.chainConfig.IsRedCoast(height) && c.config.EnableDevVerification {
+	if  c.config.EnableDevVerification {
 		if isDeveloperVerificationEnabled(state) {
 			slot := calcSlotOfDevMappingKey(addr)
 			valueHash := state.GetState(systemcontract.AddressListContractAddr, slot)
@@ -1216,7 +1216,7 @@ func (c *Congress) CanCreate(state consensus.StateReader, addr common.Address, h
 func (c *Congress) ValidateTx(sender common.Address, tx *types.Transaction, header *types.Header, parentState *state.StateDB) error {
 	// Must use the parent state for current validation,
 	// so we must starting the validation after redCoastBlock
-	if c.chainConfig.RedCoastBlock != nil && c.chainConfig.RedCoastBlock.Cmp(header.Number) < 0 {
+	if c.chainConfig.SophonBlock != nil && c.chainConfig.SophonBlock.Cmp(header.Number) < 0 {
 		m, err := c.getBlacklist(header, parentState)
 		if err != nil {
 			return err

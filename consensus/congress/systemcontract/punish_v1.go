@@ -27,8 +27,8 @@ func (s *hardForkPunishV1) Update(config *params.ChainConfig, height *big.Int, s
 	contractCode := common.FromHex(punishV1Code)
 
 	//write code to sys contract
-	state.SetCode(PunishV1ContractAddr, contractCode)
-	log.Debug("Write code to system contract account", "addr", PunishV1ContractAddr.String(), "code", punishV1Code)
+	state.SetCode(PunishContractAddr, contractCode)
+	log.Debug("Write code to system contract account", "addr", PunishContractAddr.String(), "code", punishV1Code)
 
 	return
 }
@@ -42,7 +42,7 @@ func (s *hardForkPunishV1) Execute(state *state.StateDB, header *types.Header, c
 		return err
 	}
 
-	msg := vmcaller.NewLegacyMessage(header.Coinbase, &PunishV1ContractAddr, 0, new(big.Int), math.MaxUint64, new(big.Int), data, false)
+	msg := vmcaller.NewLegacyMessage(header.Coinbase, &PunishContractAddr, 0, new(big.Int), math.MaxUint64, new(big.Int), data, false)
 	_, err = vmcaller.ExecuteMsg(msg, state, header, chainContext, config)
 
 	return

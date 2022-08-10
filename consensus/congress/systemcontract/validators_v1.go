@@ -26,15 +26,15 @@ type hardForkValidatorsV1 struct {
 }
 
 func (s *hardForkValidatorsV1) GetName() string {
-	return ValidatorsV1ContractName
+	return ValidatorsContractName
 }
 
 func (s *hardForkValidatorsV1) Update(config *params.ChainConfig, height *big.Int, state *state.StateDB) (err error) {
 	contractCode := common.FromHex(validatorV1Code)
 
 	//write code to sys contract
-	state.SetCode(ValidatorsV1ContractAddr, contractCode)
-	log.Debug("Write code to system contract account", "addr", ValidatorsV1ContractAddr.String(), "code", validatorV1Code)
+	state.SetCode(ValidatorsContractAddr, contractCode)
+	log.Debug("Write code to system contract account", "addr", ValidatorsContractAddr.String(), "code", validatorV1Code)
 
 	return
 }
@@ -49,16 +49,18 @@ func (s *hardForkValidatorsV1) getAdminByChainId(chainId *big.Int) common.Addres
 
 func (s *hardForkValidatorsV1) Execute(state *state.StateDB, header *types.Header, chainContext core.ChainContext, config *params.ChainConfig) (err error) {
 
+	// TODO(yqq) : merge all hard-forks
+	//
 	//First, get top validators from the old contract
-	v0 := NewValidatorV0()
-	topVals, err := v0.GetTopValidators(state, header, chainContext, config)
+	// v0 := NewValidatorV0()
+	topVals, err := s.GetTopValidators(state, header, chainContext, config)
 	if err != nil {
 		log.Error("getTopValidators from V0 failed", "err", err)
 		return err
 	}
 	managers := make([]common.Address, 0, len(topVals))
 	for _, val := range topVals {
-		feeAddr, err := v0.GetValidatorFeeAddr(val, state, header, chainContext, config)
+		feeAddr, err := s.GetValidatorFeeAddr(val, state, header, chainContext, config)
 		if err != nil {
 			return err
 		}
@@ -73,8 +75,71 @@ func (s *hardForkValidatorsV1) Execute(state *state.StateDB, header *types.Heade
 		return err
 	}
 
-	msg := vmcaller.NewLegacyMessage(header.Coinbase, &ValidatorsV1ContractAddr, 0, new(big.Int), math.MaxUint64, new(big.Int), data, false)
+	msg := vmcaller.NewLegacyMessage(header.Coinbase, &ValidatorsContractAddr, 0, new(big.Int), math.MaxUint64, new(big.Int), data, false)
 	_, err = vmcaller.ExecuteMsg(msg, state, header, chainContext, config)
 
 	return
+}
+
+
+
+func (v *hardForkValidatorsV1) GetTopValidators(statedb *state.StateDB, header *types.Header, chainContext core.ChainContext, config *params.ChainConfig) ([]common.Address, error) {
+	// method := "getTopValidators"
+	// data, err := v.abi.Pack(method)
+	// if err != nil {
+	// 	log.Error("Can't pack data for getTopValidators", "error", err)
+	// 	return []common.Address{}, err
+	// }
+
+	// msg := vmcaller.NewLegacyMessage(header.Coinbase, ValidatorsContractAddr, 0, new(big.Int), math.MaxUint64, new(big.Int), data, false)
+
+	// result, err := vmcaller.ExecuteMsg(msg, statedb, header, chainContext, config)
+	// if err != nil {
+	// 	return []common.Address{}, err
+	// }
+
+	// // unpack data
+	// ret, err := v.abi.Unpack(method, result)
+	// if err != nil {
+	// 	return []common.Address{}, err
+	// }
+	// if len(ret) != 1 {
+	// 	return []common.Address{}, errors.New("invalid params length")
+	// }
+	// validators, ok := ret[0].([]common.Address)
+	// if !ok {
+	// 	return []common.Address{}, errors.New("invalid validators format")
+	// }
+	// sort.Slice(validators, func(i, j int) bool {
+	// 	return bytes.Compare(validators[i][:], validators[j][:]) < 0
+	// })
+	validators := []common.Address{}
+	return validators, nil
+}
+
+func (v *hardForkValidatorsV1) GetValidatorFeeAddr(val common.Address, statedb *state.StateDB, header *types.Header, chainContext core.ChainContext, config *params.ChainConfig) (common.Address, error) {
+	// method := "getValidatorInfo"
+	// data, err := v.abi.Pack(method, val)
+	// if err != nil {
+	// 	log.Error("Can't pack data for GetValidatorInfo", "error", err)
+	// 	return common.Address{}, err
+	// }
+	// msg := vmcaller.NewLegacyMessage(header.Coinbase, &v.contractAddr, 0, new(big.Int), math.MaxUint64, new(big.Int), data, false)
+
+	// // use parent
+	// result, err := vmcaller.ExecuteMsg(msg, statedb, header, chainContext, config)
+	// if err != nil {
+	// 	return common.Address{}, err
+	// }
+	// // unpack data
+	// ret, err := v.abi.Unpack(method, result)
+	// if err != nil {
+	// 	return common.Address{}, err
+	// }
+	// feeAddr, ok := ret[0].(common.Address)
+	// if !ok {
+	// 	return common.Address{}, errors.New("invalid output")
+	// }
+	feeAddr := common.Address{}
+	return feeAddr, nil
 }
