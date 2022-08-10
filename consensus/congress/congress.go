@@ -871,12 +871,23 @@ func (c *Congress) initializeSystemContracts(chain consensus.ChainHeaderReader, 
 		addr    common.Address
 		packFun func() ([]byte, error)
 	}{
+		// TODO(yqq), add other system contracts, 2022-08-10
 		{systemcontract.ValidatorsContractAddr, func() ([]byte, error) {
 			return c.abi[systemcontract.ValidatorsContractName].Pack(method, genesisValidators)
 		}},
-		{systemcontract.PunishContractAddr, func() ([]byte, error) { return c.abi[systemcontract.PunishContractName].Pack(method) }},
-		{systemcontract.ProposalAddr, func() ([]byte, error) {
-			return c.abi[systemcontract.ProposalContractName].Pack(method, genesisValidators)
+		{systemcontract.PunishContractAddr, func() ([]byte, error) { 
+			return c.abi[systemcontract.PunishContractName].Pack(method) 
+		}},
+		// {systemcontract.ProposalAddr, func() ([]byte, error) {
+		// 	return c.abi[systemcontract.ProposalContractName].Pack(method, genesisValidators)
+		// }},
+		{systemcontract.AddressListContractAddr, func() ([]byte, error){
+			admin := systemcontract.GetAdminByChainId(c.chainConfig.ChainID)
+			return c.abi[systemcontract.AddressListContractName].Pack(method, admin)
+		}},
+		{systemcontract.SysGovContractAddr, func() ([]byte, error){
+			admin := systemcontract.GetAdminByChainId(c.chainConfig.ChainID)
+			return c.abi[systemcontract.SysGovContractName].Pack(method, admin)
 		}},
 	}
 
