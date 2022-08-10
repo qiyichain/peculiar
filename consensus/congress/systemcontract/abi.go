@@ -2043,15 +2043,10 @@ var (
 	ProposalContractName     = "proposal"
 	SysGovContractName       = "governance"
 	AddressListContractName  = "address_list"
-	// ValidatorsV1ContractName = "validators_v1"
-	// PunishV1ContractName     = "punish_v1"
 	ValidatorsContractAddr   = common.HexToAddress("0x000000000000000000000000000000000000f000")
 	PunishContractAddr       = common.HexToAddress("0x000000000000000000000000000000000000f001")
-	ProposalAddr             = common.HexToAddress("0x000000000000000000000000000000000000f002")
-	SysGovContractAddr       = common.HexToAddress("0x000000000000000000000000000000000000F003")
-	AddressListContractAddr  = common.HexToAddress("0x000000000000000000000000000000000000F004")
-	// ValidatorsV1ContractAddr = common.HexToAddress("0x000000000000000000000000000000000000F005")
-	// PunishV1ContractAddr     = common.HexToAddress("0x000000000000000000000000000000000000F006")
+	SysGovContractAddr       = common.HexToAddress("0x000000000000000000000000000000000000F002")
+	AddressListContractAddr  = common.HexToAddress("0x000000000000000000000000000000000000F003")
 	// SysGovToAddr is the To address for the system governance transaction, NOT contract address
 	SysGovToAddr = common.HexToAddress("0x000000000000000000000000000000000000ffff")
 
