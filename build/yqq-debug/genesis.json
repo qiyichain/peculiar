@@ -16,7 +16,8 @@
     "arrowGlacierBlock": 0,
     "congress": {
       "period": 3,
-      "epoch": 200
+      "epoch": 200,
+      "enableDevVerification": true
     }
   },
   "nonce": "0x0",
