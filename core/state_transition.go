@@ -377,6 +377,13 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		}
 	}
 
+	// Check if can transfer.
+	if !contractCreation && st.evm.Context.IsPermittedTransfer != nil {
+		if !st.evm.Context.IsPermittedTransfer(st.evm.StateDB, msg.From(), st.evm.Context.BlockNumber) {
+			return nil, vm.ErrIllegalTransfer
+		}
+	}
+
 	var (
 		ret   []byte
 		vmerr error // vm errors do not effect consensus and are therefore not assigned to err
