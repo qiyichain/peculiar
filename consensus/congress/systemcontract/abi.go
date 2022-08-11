@@ -1,11 +1,12 @@
 package systemcontract
 
 import (
+	"math/big"
+	"strings"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
-	"math/big"
-	"strings"
 )
 
 // ValidatorsInteractiveABI contains all methods to interactive with validator contracts.
@@ -500,6 +501,8 @@ const PunishV1InteractiveABI = `[
     }
 ]`
 
+// TODO(peculiar): ToC whitelist contract ABI
+
 // DevMappingPosition is the position of the state variable `devs`.
 // Since the state variables are as follow:
 //    bool public initialized;
@@ -546,6 +549,8 @@ var (
 	AddressListContractAddr  = common.HexToAddress("0x000000000000000000000000000000000000F004")
 	ValidatorsV1ContractAddr = common.HexToAddress("0x000000000000000000000000000000000000F005")
 	PunishV1ContractAddr     = common.HexToAddress("0x000000000000000000000000000000000000F006")
+	// TODO(peculiar): ToC whitelist contract address
+	ToCAddressListContractAddr = common.HexToAddress("0x000000000000000000000000000000000000F007")
 	// SysGovToAddr is the To address for the system governance transaction, NOT contract address
 	SysGovToAddr = common.HexToAddress("0x000000000000000000000000000000000000ffff")
 
