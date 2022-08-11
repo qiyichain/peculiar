@@ -37,6 +37,7 @@ var (
 	ErrInvalidCode              = errors.New("invalid code: must not begin with 0xef")
 	ErrUnauthorizedDeveloper    = errors.New("unauthorized developer")
 	ErrNonceUintOverflow        = errors.New("nonce uint64 overflow")
+	ErrIllegalTransfer          = errors.New("no permission for transfer")
 )
 
 // ErrStackUnderflow wraps an evm error when the items on the stack less
