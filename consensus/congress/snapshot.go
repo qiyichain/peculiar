@@ -155,6 +155,7 @@ func (s *Snapshot) apply(headers []*types.Header, chain consensus.ChainHeaderRea
 		if number > 0 && number%s.config.Epoch == 0 {
 			checkpointHeader := header
 
+			// NOTE(yqq): parse all validators from header.Extra, 2022-08-11
 			// get validators from headers and use that for new validator set
 			validators := make([]common.Address, (len(checkpointHeader.Extra)-extraVanity-extraSeal)/common.AddressLength)
 			for i := 0; i < len(validators); i++ {

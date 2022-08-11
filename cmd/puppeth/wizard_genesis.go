@@ -100,6 +100,7 @@ func (w *wizard) makeGenesis() {
 				}
 			}
 		}
+		// TODO(yqq) 2022-08-11 , The algorithm of generating extraData
 		genesis.ExtraData = make([]byte, 32+len(signers)*common.AddressLength+65)
 		for i, signer := range signers {
 			copy(genesis.ExtraData[32+i*common.AddressLength:], signer[:])

@@ -26,6 +26,7 @@ build/_vendor/pkg
 /build/_workspace/
 /build/cache/
 /build/bin/
+/build/yqq-debug/data/geth
 /geth*.zip
 
 # travis
@@ -36,7 +37,7 @@ profile.cov
 .idea
 
 # VS Code
-.vscode
+.vscode/*.log
 
 # dashboard
 /dashboard/assets/flow-typed
@@ -47,3 +48,4 @@ profile.cov
 /dashboard/assets/package-lock.json
 
 **/yarn-error.log
+cmd/geth/__debug_bin

@@ -742,7 +742,7 @@ func (c *Congress) FinalizeAndAssemble(chain consensus.ChainHeaderReader, header
 	// Even if the miner is not `running`, it's still working,
 	// the 'miner.worker' will try to FinalizeAndAssemble a block,
 	// in this case, the signTxFn is not set. A `non-miner node` can't execute system governance proposal.
-	if c.signTxFn != nil && true /*chain.Config().IsSophon(header.Number) */{
+	if c.signTxFn != nil && true /*chain.Config().IsSophon(header.Number) */ {
 		proposalCount, err := c.getPassedProposalCount(chain, header, state)
 		if err != nil {
 			return nil, nil, err
@@ -874,7 +874,13 @@ func (c *Congress) initializeSystemContracts(chain consensus.ChainHeaderReader, 
 	}{
 		// TODO(yqq), add other system contracts, 2022-08-10
 		{systemcontract.ValidatorsContractAddr, func() ([]byte, error) {
-			return c.abi[systemcontract.ValidatorsContractName].Pack(method, genesisValidators)
+			admin := systemcontract.GetAdminByChainId(c.chainConfig.ChainID)
+			managers := make([]common.Address, 0)
+			// NOTE: we use admin to manage all validators
+			for i:= 0; i < len(genesisValidators); i++ {
+				managers = append(managers, admin)
+			}
+			return c.abi[systemcontract.ValidatorsContractName].Pack(method, genesisValidators, managers, admin)
 		}},
 		{systemcontract.PunishContractAddr, func() ([]byte, error) {
 			return c.abi[systemcontract.PunishContractName].Pack(method)
@@ -1325,22 +1331,25 @@ func (c *Congress) getBlacklist(header *types.Header, parentState *state.StateDB
 
 func (c *Congress) CreateEvmExtraValidator(header *types.Header, parentState *state.StateDB) types.EvmExtraValidator {
 	// if c.chainConfig.SophonBlock != nil && c.chainConfig.SophonBlock.Cmp(header.Number) < 0 {
-	blacks, err := c.getBlacklist(header, parentState)
-	if err != nil {
-		log.Error("getBlacklist failed", "err", err)
-		return nil
-	}
-	rules, err := c.getEventCheckRules(header, parentState)
-	if err != nil {
-		log.Error("getEventCheckRules failed", "err", err)
-		return nil
-	}
-	return &blacklistValidator{
-		blacks: blacks,
-		rules:  rules,
+	// TODO(yqq): we disable blacklist at genesis block. Shall we open this ?
+	if header.Number.Cmp(common.Big1) > 0 {
+		blacks, err := c.getBlacklist(header, parentState)
+		if err != nil {
+			log.Error("getBlacklist failed", "err", err)
+			return nil
+		}
+		rules, err := c.getEventCheckRules(header, parentState)
+		if err != nil {
+			log.Error("getEventCheckRules failed", "err", err)
+			return nil
+		}
+		return &blacklistValidator{
+			blacks: blacks,
+			rules:  rules,
+		}
 	}
 	// }
-	// return nil
+	return nil
 }
 
 func (c *Congress) getEventCheckRules(header *types.Header, parentState *state.StateDB) (map[common.Hash]*EventCheckRule, error) {
