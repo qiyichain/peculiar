@@ -1220,22 +1220,17 @@ func (c *Congress) IsSysTransaction(sender common.Address, tx *types.Transaction
 // TODO yqq 2022-08-09: note this
 func (c *Congress) CanCreate(state consensus.StateReader, addr common.Address, height *big.Int) bool {
 	if c.config.EnableDevVerification {
-		if addr == getAdmin(state, systemcontract.AddressListContractAddr) {
-			return true
-		}
+		// admin is not in devs, but it could adds itself to devs.
+		//
+		// if addr == getAdmin(state, systemcontract.AddressListContractAddr) {
+		// 	return true
+		// }
 		if isDeveloperVerificationEnabled(state, systemcontract.AddressListContractAddr) {
 			slot := calcSlotOfDevMappingKey(addr)
 			valueHash := state.GetState(systemcontract.AddressListContractAddr, slot)
 			// none zero value means true
 			return valueHash.Big().Sign() > 0
 		}
-		// ToC
-		// if isDeveloperVerificationEnabled(state, systemcontract.ToCAddressListContractAddr) {
-		// 	slot := calcSlotOfDevMappingKey(addr)
-		// 	valueHash := state.GetState(systemcontract.ToCAddressListContractAddr, slot)
-		// 	// none zero value means true
-		// 	return valueHash.Big().Sign() > 0
-		// }
 	}
 	return true
 }
@@ -1244,9 +1239,17 @@ func (c *Congress) CanCreate(state consensus.StateReader, addr common.Address, h
 // can make a transfer according to whitelist.
 func (c *Congress) CanTransferByWhitelist(state consensus.StateReader, addr common.Address, height *big.Int) bool {
 	if c.config.EnableDevVerification {
+		// by yqq 2022-08-12
+		// NOTE(yqq): The 'admin' should be called 'banker' which can deposit tokens to all business-address(B-end).
+		// TODO(yqq): To improve performance, we should hard-code the 'banker', as the 'banker' is immutable.
 		if addr == getAdmin(state, systemcontract.AddressListContractAddr) {
 			return true
 		}
+		// banker := systemcontract.GetAdminByChainId(c.chainConfig.ChainID)
+		// if addr == banker {
+		// 	return true
+		// }
+
 		// ToB
 		if isDeveloperVerificationEnabled(state, systemcontract.AddressListContractAddr) {
 			slot := calcSlotOfDevMappingKey(addr)
@@ -1254,13 +1257,6 @@ func (c *Congress) CanTransferByWhitelist(state consensus.StateReader, addr comm
 			// none zero value means true
 			return valueHash.Big().Sign() > 0
 		}
-		// ToC
-		// if isDeveloperVerificationEnabled(state, systemcontract.ToCAddressListContractAddr) {
-		// 	slot := calcSlotOfDevMappingKey(addr)
-		// 	valueHash := state.GetState(systemcontract.ToCAddressListContractAddr, slot)
-		// 	// none zero value means true
-		// 	return valueHash.Big().Sign() > 0
-		// }
 	}
 	return true
 }
@@ -1272,7 +1268,6 @@ func (c *Congress) ValidateTx(sender common.Address, tx *types.Transaction, head
 	// so we must starting the validation after redCoastBlock
 
 	// NOTE: We have merged RedCoast and Sophon to our genesis system contract. yqq-2022-08-10
-	// if c.chainConfig.SophonBlock != nil && c.chainConfig.SophonBlock.Cmp(header.Number) < 0 {
 	m, err := c.getBlacklist(header, parentState)
 	if err != nil {
 		return err
@@ -1287,7 +1282,6 @@ func (c *Congress) ValidateTx(sender common.Address, tx *types.Transaction, head
 			return types.ErrAddressDenied
 		}
 	}
-	// }
 	return nil
 }
 
@@ -1307,8 +1301,6 @@ func (c *Congress) getBlacklist(header *types.Header, parentState *state.StateDB
 	}
 
 	// if the last updates is long ago, we don't need to get blacklist from the contract.
-	// if c.chainConfig.SophonBlock != nil && header.Number.Cmp(c.chainConfig.SophonBlock) > 0 {
-	//
 	if header.Number.Cmp(common.Big2) > 0 {
 		num := header.Number.Uint64()
 		lastUpdated := lastBlacklistUpdatedNumber(parentState)
@@ -1366,7 +1358,6 @@ func (c *Congress) getBlacklist(header *types.Header, parentState *state.StateDB
 }
 
 func (c *Congress) CreateEvmExtraValidator(header *types.Header, parentState *state.StateDB) types.EvmExtraValidator {
-	// if c.chainConfig.SophonBlock != nil && c.chainConfig.SophonBlock.Cmp(header.Number) < 0 {
 	// TODO(yqq): we disable blacklist at genesis block. Shall we open this ?
 	if header.Number.Cmp(common.Big1) > 0 {
 		blacks, err := c.getBlacklist(header, parentState)
@@ -1384,7 +1375,6 @@ func (c *Congress) CreateEvmExtraValidator(header *types.Header, parentState *st
 			rules:  rules,
 		}
 	}
-	// }
 	return nil
 }
 
@@ -1518,12 +1508,13 @@ func isDeveloperVerificationEnabled(state consensus.StateReader, addr common.Add
 	return enabledByte == 0x01
 }
 
+// getAdmin to get the admin from contract storage, admin is 'banker' in actually.
 func getAdmin(state consensus.StateReader, addr common.Address) common.Address {
 	compactValue := state.GetState(addr, common.Hash{})
 	// Layout of slot 0:
 	// [0   -    9][10-29][  30   ][    31     ]
 	// [zero bytes][admin][enabled][initialized]
-	adminBytes := compactValue.Bytes()[adminIndex : common.HashLength-2]
+	adminBytes := compactValue.Bytes()[adminIndex : adminIndex + common.AddressLength]
 	return common.BytesToAddress(adminBytes)
 }
 

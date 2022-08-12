@@ -373,14 +373,14 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	// Check if can create
 	if contractCreation && st.evm.Context.CanCreate != nil {
 		if !st.evm.Context.CanCreate(st.evm.StateDB, msg.From(), st.evm.Context.BlockNumber) {
-			return nil, ErrUnauthorizedDeveloper
+			return nil, ErrUnauthorizedCreate
 		}
 	}
 
 	// Check if can transfer.
 	if !contractCreation && st.evm.Context.IsPermittedTransfer != nil {
 		if !st.evm.Context.IsPermittedTransfer(st.evm.StateDB, msg.From(), st.evm.Context.BlockNumber) {
-			return nil, vm.ErrIllegalTransfer
+			return nil, ErrUnauthorizedTransfer
 		}
 	}
 

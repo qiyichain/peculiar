@@ -185,20 +185,21 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 	}
 
 	// Check whether the involved addresses are denied if needed
-	// if evm.Context.ExtraValidator != nil && evm.depth > 0 {
-	// 	if evm.Context.ExtraValidator.IsAddressDenied(caller.Address(), common.CheckFrom) ||
-	// 		evm.Context.ExtraValidator.IsAddressDenied(addr, common.CheckTo) {
-	// 		return nil, gas, types.ErrAddressDenied
-	// 	}
-	// }
+	if evm.Context.ExtraValidator != nil && evm.depth > 0 {
+		if evm.Context.ExtraValidator.IsAddressDenied(caller.Address(), common.CheckFrom) ||
+			evm.Context.ExtraValidator.IsAddressDenied(addr, common.CheckTo) {
+			return nil, gas, types.ErrAddressDenied
+		}
+	}
 
 	// Fail if we're trying to transfer more than the available balance
 	if value.Sign() != 0 && !evm.Context.CanTransfer(evm.StateDB, caller.Address(), value) {
 		return nil, gas, ErrInsufficientBalance
 	}
-	if value.Sign() != 0 && !evm.Context.IsPermittedTransfer(evm.StateDB, caller.Address(), evm.Context.BlockNumber) {
-		return nil, gas, ErrIllegalTransfer
-	}
+
+	// FIX(yqq): In principle, we must allow all address which has enough gas to call contract. 2022-08-12
+	// 
+
 	snapshot := evm.StateDB.Snapshot()
 	p, isPrecompile := evm.precompile(addr)
 
@@ -286,12 +287,12 @@ func (evm *EVM) CallCode(caller ContractRef, addr common.Address, input []byte, 
 	}
 
 	// Check whether the involved addresses are denied if needed
-	// if evm.Context.ExtraValidator != nil {
-	// 	if evm.Context.ExtraValidator.IsAddressDenied(caller.Address(), common.CheckFrom) ||
-	// 		evm.Context.ExtraValidator.IsAddressDenied(addr, common.CheckTo) {
-	// 		return nil, gas, types.ErrAddressDenied
-	// 	}
-	// }
+	if evm.Context.ExtraValidator != nil {
+		if evm.Context.ExtraValidator.IsAddressDenied(caller.Address(), common.CheckFrom) ||
+			evm.Context.ExtraValidator.IsAddressDenied(addr, common.CheckTo) {
+			return nil, gas, types.ErrAddressDenied
+		}
+	}
 
 	// Fail if we're trying to transfer more than the available balance
 	// Note although it's noop to transfer X ether to caller itself. But
@@ -300,9 +301,11 @@ func (evm *EVM) CallCode(caller ContractRef, addr common.Address, input []byte, 
 	if !evm.Context.CanTransfer(evm.StateDB, caller.Address(), value) {
 		return nil, gas, ErrInsufficientBalance
 	}
-	if value.Sign() != 0 && !evm.Context.IsPermittedTransfer(evm.StateDB, caller.Address(), evm.Context.BlockNumber) {
-		return nil, gas, ErrIllegalTransfer
-	}
+
+	// FIX(yqq): In principle, we must allow all address which has enough gas to call contract. 2022-08-12
+	//
+
+
 	var snapshot = evm.StateDB.Snapshot()
 
 	// Invoke tracer hooks that signal entering/exiting a call frame
@@ -349,12 +352,12 @@ func (evm *EVM) DelegateCall(caller ContractRef, addr common.Address, input []by
 	}
 
 	// Check whether the involved addresses are denied if needed
-	// if evm.Context.ExtraValidator != nil {
-	// 	if evm.Context.ExtraValidator.IsAddressDenied(caller.Address(), common.CheckFrom) ||
-	// 		evm.Context.ExtraValidator.IsAddressDenied(addr, common.CheckTo) {
-	// 		return nil, gas, types.ErrAddressDenied
-	// 	}
-	// }
+	if evm.Context.ExtraValidator != nil {
+		if evm.Context.ExtraValidator.IsAddressDenied(caller.Address(), common.CheckFrom) ||
+			evm.Context.ExtraValidator.IsAddressDenied(addr, common.CheckTo) {
+			return nil, gas, types.ErrAddressDenied
+		}
+	}
 
 	var snapshot = evm.StateDB.Snapshot()
 
@@ -400,12 +403,12 @@ func (evm *EVM) StaticCall(caller ContractRef, addr common.Address, input []byte
 	}
 
 	// Check whether the involved addresses are denied if needed
-	// if evm.Context.ExtraValidator != nil {
-	// 	if evm.Context.ExtraValidator.IsAddressDenied(caller.Address(), common.CheckFrom) ||
-	// 		evm.Context.ExtraValidator.IsAddressDenied(addr, common.CheckTo) {
-	// 		return nil, gas, types.ErrAddressDenied
-	// 	}
-	// }
+	if evm.Context.ExtraValidator != nil {
+		if evm.Context.ExtraValidator.IsAddressDenied(caller.Address(), common.CheckFrom) ||
+			evm.Context.ExtraValidator.IsAddressDenied(addr, common.CheckTo) {
+			return nil, gas, types.ErrAddressDenied
+		}
+	}
 
 	// We take a snapshot here. This is a bit counter-intuitive, and could probably be skipped.
 	// However, even a staticcall is considered a 'touch'. On mainnet, static calls were introduced

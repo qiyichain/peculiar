@@ -2024,7 +2024,331 @@ const AddrListInteractiveABI =`
 `
 
 
-// TODO(yqq) add ABI of ToCAddressList, 2022-08-12
+// add ABI of UserAddressList (C-End), yqq-2022-08-12
+const UserAddrListInteractiveABI = `
+[
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newAdmin",
+        "type": "address"
+      }
+    ],
+    "name": "AdminChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newAdmin",
+        "type": "address"
+      }
+    ],
+    "name": "AdminChanging",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "addr",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum UserAddressList.Direction",
+        "name": "d",
+        "type": "uint8"
+      }
+    ],
+    "name": "BlackAddrAdded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "addr",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum UserAddressList.Direction",
+        "name": "d",
+        "type": "uint8"
+      }
+    ],
+    "name": "BlackAddrRemoved",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bool",
+        "name": "newState",
+        "type": "bool"
+      }
+    ],
+    "name": "EnableStateChanged",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "addr",
+        "type": "address"
+      }
+    ],
+    "name": "UserAdded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "addr",
+        "type": "address"
+      }
+    ],
+    "name": "UserRemoved",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "a",
+        "type": "address"
+      },
+      {
+        "internalType": "enum UserAddressList.Direction",
+        "name": "d",
+        "type": "uint8"
+      }
+    ],
+    "name": "addBlacklist",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "addr",
+        "type": "address"
+      }
+    ],
+    "name": "addUser",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "admin",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "blackLastUpdatedNumber",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newAdmin",
+        "type": "address"
+      }
+    ],
+    "name": "commitChangeAdmin",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "confirmChangeAdmin",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "disableUserVerify",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "enableUserVerify",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_admin",
+        "type": "address"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "initialized",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "a",
+        "type": "address"
+      }
+    ],
+    "name": "isBlackAddress",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      },
+      {
+        "internalType": "enum UserAddressList.Direction",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "addr",
+        "type": "address"
+      }
+    ],
+    "name": "isUser",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "pendingAdmin",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "a",
+        "type": "address"
+      },
+      {
+        "internalType": "enum UserAddressList.Direction",
+        "name": "d",
+        "type": "uint8"
+      }
+    ],
+    "name": "removeBlacklist",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "addr",
+        "type": "address"
+      }
+    ],
+    "name": "removeUser",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "userVerifyEnabled",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
+`
 
 // DevMappingPosition is the position of the state variable `devs`.
 // Since the state variables are as follow:
@@ -2065,11 +2389,12 @@ var (
 	ProposalContractName    = "proposal"
 	SysGovContractName      = "governance"
 	AddressListContractName = "address_list"
+	UserAddressListContractName = "user_address_list"
 	ValidatorsContractAddr  = common.HexToAddress("0x000000000000000000000000000000000000f000")
 	PunishContractAddr      = common.HexToAddress("0x000000000000000000000000000000000000f001")
 	SysGovContractAddr      = common.HexToAddress("0x000000000000000000000000000000000000F002")
 	AddressListContractAddr = common.HexToAddress("0x000000000000000000000000000000000000F003")
-	ToCAddressListContractAddr = common.HexToAddress("0x000000000000000000000000000000000000F004")
+	UserAddressListContractAddr = common.HexToAddress("0x000000000000000000000000000000000000F004")
 	// SysGovToAddr is the To address for the system governance transaction, NOT contract address
 	SysGovToAddr = common.HexToAddress("0x000000000000000000000000000000000000ffff")
 
@@ -2082,20 +2407,15 @@ func init() {
 	abiMap[ValidatorsContractName] = tmpABI
 	tmpABI, _ = abi.JSON(strings.NewReader(PunishInteractiveABI))
 	abiMap[PunishContractName] = tmpABI
-	// tmpABI, _ = abi.JSON(strings.NewReader(ProposalInteractiveABI))
-	// abiMap[ProposalContractName] = tmpABI
 	tmpABI, _ = abi.JSON(strings.NewReader(SysGovInteractiveABI))
 	abiMap[SysGovContractName] = tmpABI
 	tmpABI, _ = abi.JSON(strings.NewReader(AddrListInteractiveABI))
 	abiMap[AddressListContractName] = tmpABI
 
-  // TODO(yqq) add ABI of ToCAddressList, 2022-08-12
+  // add ABI of UserAddressList(C-End), 2022-08-12
+  tmpABI, _ = abi.JSON(strings.NewReader(UserAddrListInteractiveABI))
+	abiMap[UserAddressListContractName] = tmpABI
 
-
-	// tmpABI, _ = abi.JSON(strings.NewReader(ValidatorsV1InteractiveABI))
-	// abiMap[ValidatorsV1ContractName] = tmpABI
-	// tmpABI, _ = abi.JSON(strings.NewReader(PunishV1InteractiveABI))
-	// abiMap[PunishV1ContractName] = tmpABI
 }
 
 func GetInteractiveABI() map[string]abi.ABI {

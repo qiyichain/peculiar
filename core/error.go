@@ -100,7 +100,10 @@ var (
 
 	ErrMetaTrans = errors.New("ErrMetaTrans")
 
-	ErrUnauthorizedDeveloper = errors.New("unauthorized developer")
+	ErrUnauthorizedCreate = errors.New("unauthorized create contract")
+
+	ErrUnauthorizedTransfer = errors.New("unauthorized transfer")
+
 	// ErrSenderNoEOA is returned if the sender of a transaction is a contract.
 	ErrSenderNoEOA = errors.New("sender not an eoa")
 )
