@@ -886,12 +886,13 @@ func (c *Congress) initializeSystemContracts(chain consensus.ChainHeaderReader, 
 		{systemcontract.PunishContractAddr, func() ([]byte, error) {
 			return c.abi[systemcontract.PunishContractName].Pack(method)
 		}},
-		// {systemcontract.ProposalAddr, func() ([]byte, error) {
-		// 	return c.abi[systemcontract.ProposalContractName].Pack(method, genesisValidators)
-		// }},
 		{systemcontract.AddressListContractAddr, func() ([]byte, error) {
 			admin := systemcontract.GetAdminByChainId(c.chainConfig.ChainID)
 			return c.abi[systemcontract.AddressListContractName].Pack(method, admin)
+		}},
+		{systemcontract.UserAddressListContractAddr, func() ([]byte, error) {
+			admin := systemcontract.GetAdminByChainId(c.chainConfig.ChainID)
+			return c.abi[systemcontract.UserAddressListContractName].Pack(method, admin)
 		}},
 		{systemcontract.SysGovContractAddr, func() ([]byte, error) {
 			admin := systemcontract.GetAdminByChainId(c.chainConfig.ChainID)
@@ -1242,15 +1243,15 @@ func (c *Congress) CanTransferByWhitelist(state consensus.StateReader, addr comm
 		// by yqq 2022-08-12
 		// NOTE(yqq): The 'admin' should be called 'banker' which can deposit tokens to all business-address(B-end).
 		// TODO(yqq): To improve performance, we should hard-code the 'banker', as the 'banker' is immutable.
-		if addr == getAdmin(state, systemcontract.AddressListContractAddr) {
-			return true
-		}
-		// banker := systemcontract.GetAdminByChainId(c.chainConfig.ChainID)
-		// if addr == banker {
+		// if addr == getAdmin(state, systemcontract.AddressListContractAddr) {
 		// 	return true
 		// }
+		banker := systemcontract.GetAdminByChainId(c.chainConfig.ChainID)
+		if addr == banker {
+			return true
+		}
 
-		// ToB
+		// check whether sender is in whitelist or not
 		if isDeveloperVerificationEnabled(state, systemcontract.AddressListContractAddr) {
 			slot := calcSlotOfDevMappingKey(addr)
 			valueHash := state.GetState(systemcontract.AddressListContractAddr, slot)
