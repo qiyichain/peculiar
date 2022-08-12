@@ -656,7 +656,8 @@ func (c *Congress) Finalize(chain consensus.ChainHeaderReader, header *types.Hea
 	}
 
 	//handle system governance Proposal
-	if chain.Config().IsRedCoast(header.Number) {
+	//if chain.Config().IsSophon(header.Number) {
+	if true {
 		proposalCount, err := c.getPassedProposalCount(chain, header, state)
 		if err != nil {
 			return err
@@ -742,7 +743,7 @@ func (c *Congress) FinalizeAndAssemble(chain consensus.ChainHeaderReader, header
 	// Even if the miner is not `running`, it's still working,
 	// the 'miner.worker' will try to FinalizeAndAssemble a block,
 	// in this case, the signTxFn is not set. A `non-miner node` can't execute system governance proposal.
-	if c.signTxFn != nil && chain.Config().IsRedCoast(header.Number) {
+	if c.signTxFn != nil && true /*chain.Config().IsSophon(header.Number) */ {
 		proposalCount, err := c.getPassedProposalCount(chain, header, state)
 		if err != nil {
 			return nil, nil, err
@@ -872,12 +873,29 @@ func (c *Congress) initializeSystemContracts(chain consensus.ChainHeaderReader, 
 		addr    common.Address
 		packFun func() ([]byte, error)
 	}{
+		// TODO(yqq), add other system contracts, 2022-08-10
 		{systemcontract.ValidatorsContractAddr, func() ([]byte, error) {
-			return c.abi[systemcontract.ValidatorsContractName].Pack(method, genesisValidators)
+			admin := systemcontract.GetAdminByChainId(c.chainConfig.ChainID)
+			managers := make([]common.Address, 0)
+			// NOTE: we use admin to manage all validators
+			for i:= 0; i < len(genesisValidators); i++ {
+				managers = append(managers, admin)
+			}
+			return c.abi[systemcontract.ValidatorsContractName].Pack(method, genesisValidators, managers, admin)
 		}},
-		{systemcontract.PunishContractAddr, func() ([]byte, error) { return c.abi[systemcontract.PunishContractName].Pack(method) }},
-		{systemcontract.ProposalAddr, func() ([]byte, error) {
-			return c.abi[systemcontract.ProposalContractName].Pack(method, genesisValidators)
+		{systemcontract.PunishContractAddr, func() ([]byte, error) {
+			return c.abi[systemcontract.PunishContractName].Pack(method)
+		}},
+		// {systemcontract.ProposalAddr, func() ([]byte, error) {
+		// 	return c.abi[systemcontract.ProposalContractName].Pack(method, genesisValidators)
+		// }},
+		{systemcontract.AddressListContractAddr, func() ([]byte, error) {
+			admin := systemcontract.GetAdminByChainId(c.chainConfig.ChainID)
+			return c.abi[systemcontract.AddressListContractName].Pack(method, admin)
+		}},
+		{systemcontract.SysGovContractAddr, func() ([]byte, error) {
+			admin := systemcontract.GetAdminByChainId(c.chainConfig.ChainID)
+			return c.abi[systemcontract.SysGovContractName].Pack(method, admin)
 		}},
 	}
 
@@ -1169,12 +1187,12 @@ func encodeSigHeader(w io.Writer, header *types.Header) {
 }
 
 func (c *Congress) PreHandle(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB) error {
-	if c.chainConfig.RedCoastBlock != nil && c.chainConfig.RedCoastBlock.Cmp(header.Number) == 0 {
-		return systemcontract.ApplySystemContractUpgrade(systemcontract.SysContractV1, state, header, newChainContext(chain, c), c.chainConfig)
-	}
-	if c.chainConfig.SophonBlock != nil && c.chainConfig.SophonBlock.Cmp(header.Number) == 0 {
-		return systemcontract.ApplySystemContractUpgrade(systemcontract.SysContractV2, state, header, newChainContext(chain, c), c.chainConfig)
-	}
+	// if c.chainConfig.RedCoastBlock != nil && c.chainConfig.RedCoastBlock.Cmp(header.Number) == 0 {
+	// 	return systemcontract.ApplySystemContractUpgrade(systemcontract.SysContractV1, state, header, newChainContext(chain, c), c.chainConfig)
+	// }
+	// if c.chainConfig.SophonBlock != nil && c.chainConfig.SophonBlock.Cmp(header.Number) == 0 {
+	// 	return systemcontract.ApplySystemContractUpgrade(systemcontract.SysContractV2, state, header, newChainContext(chain, c), c.chainConfig)
+	// }
 	return nil
 }
 
@@ -1199,12 +1217,12 @@ func (c *Congress) IsSysTransaction(sender common.Address, tx *types.Transaction
 //
 // This will queries the system Developers contract, by DIRECTLY to get the target slot value of the contract,
 // it means that it's strongly relative to the layout of the Developers contract's state variables
+// TODO yqq 2022-08-09: note this
 func (c *Congress) CanCreate(state consensus.StateReader, addr common.Address, height *big.Int) bool {
-	if c.chainConfig.IsRedCoast(height) && c.config.EnableDevVerification {
+	if c.config.EnableDevVerification {
 		if addr == getAdmin(state, systemcontract.AddressListContractAddr) {
 			return true
 		}
-		// ToB
 		if isDeveloperVerificationEnabled(state, systemcontract.AddressListContractAddr) {
 			slot := calcSlotOfDevMappingKey(addr)
 			valueHash := state.GetState(systemcontract.AddressListContractAddr, slot)
@@ -1225,7 +1243,7 @@ func (c *Congress) CanCreate(state consensus.StateReader, addr common.Address, h
 // CanTransferByWhitelist implements consensus.PoSA interface which determines where a given address
 // can make a transfer according to whitelist.
 func (c *Congress) CanTransferByWhitelist(state consensus.StateReader, addr common.Address, height *big.Int) bool {
-	if c.chainConfig.IsRedCoast(height) && c.config.EnableDevVerification {
+	if c.config.EnableDevVerification {
 		if addr == getAdmin(state, systemcontract.AddressListContractAddr) {
 			return true
 		}
@@ -1252,22 +1270,24 @@ func (c *Congress) CanTransferByWhitelist(state consensus.StateReader, addr comm
 func (c *Congress) ValidateTx(sender common.Address, tx *types.Transaction, header *types.Header, parentState *state.StateDB) error {
 	// Must use the parent state for current validation,
 	// so we must starting the validation after redCoastBlock
-	if c.chainConfig.RedCoastBlock != nil && c.chainConfig.RedCoastBlock.Cmp(header.Number) < 0 {
-		m, err := c.getBlacklist(header, parentState)
-		if err != nil {
-			return err
-		}
-		if d, exist := m[sender]; exist && (d != DirectionTo) {
-			log.Trace("Hit blacklist", "tx", tx.Hash().String(), "addr", sender.String(), "direction", d)
+
+	// NOTE: We have merged RedCoast and Sophon to our genesis system contract. yqq-2022-08-10
+	// if c.chainConfig.SophonBlock != nil && c.chainConfig.SophonBlock.Cmp(header.Number) < 0 {
+	m, err := c.getBlacklist(header, parentState)
+	if err != nil {
+		return err
+	}
+	if d, exist := m[sender]; exist && (d != DirectionTo) {
+		log.Trace("Hit blacklist", "tx", tx.Hash().String(), "addr", sender.String(), "direction", d)
+		return types.ErrAddressDenied
+	}
+	if to := tx.To(); to != nil {
+		if d, exist := m[*to]; exist && (d != DirectionFrom) {
+			log.Trace("Hit blacklist", "tx", tx.Hash().String(), "addr", to.String(), "direction", d)
 			return types.ErrAddressDenied
 		}
-		if to := tx.To(); to != nil {
-			if d, exist := m[*to]; exist && (d != DirectionFrom) {
-				log.Trace("Hit blacklist", "tx", tx.Hash().String(), "addr", to.String(), "direction", d)
-				return types.ErrAddressDenied
-			}
-		}
 	}
+	// }
 	return nil
 }
 
@@ -1287,7 +1307,9 @@ func (c *Congress) getBlacklist(header *types.Header, parentState *state.StateDB
 	}
 
 	// if the last updates is long ago, we don't need to get blacklist from the contract.
-	if c.chainConfig.SophonBlock != nil && header.Number.Cmp(c.chainConfig.SophonBlock) > 0 {
+	// if c.chainConfig.SophonBlock != nil && header.Number.Cmp(c.chainConfig.SophonBlock) > 0 {
+	//
+	if header.Number.Cmp(common.Big2) > 0 {
 		num := header.Number.Uint64()
 		lastUpdated := lastBlacklistUpdatedNumber(parentState)
 		if num >= 2 && num > lastUpdated+1 {
@@ -1344,22 +1366,24 @@ func (c *Congress) getBlacklist(header *types.Header, parentState *state.StateDB
 }
 
 func (c *Congress) CreateEvmExtraValidator(header *types.Header, parentState *state.StateDB) types.EvmExtraValidator {
-	// We used whitelist instead of blacklist to restrict txs execution.
 	// if c.chainConfig.SophonBlock != nil && c.chainConfig.SophonBlock.Cmp(header.Number) < 0 {
-	// 	blacks, err := c.getBlacklist(header, parentState)
-	// 	if err != nil {
-	// 		log.Error("getBlacklist failed", "err", err)
-	// 		return nil
-	// 	}
-	// 	rules, err := c.getEventCheckRules(header, parentState)
-	// 	if err != nil {
-	// 		log.Error("getEventCheckRules failed", "err", err)
-	// 		return nil
-	// 	}
-	// 	return &blacklistValidator{
-	// 		blacks: blacks,
-	// 		rules:  rules,
-	// 	}
+	// TODO(yqq): we disable blacklist at genesis block. Shall we open this ?
+	if header.Number.Cmp(common.Big1) > 0 {
+		blacks, err := c.getBlacklist(header, parentState)
+		if err != nil {
+			log.Error("getBlacklist failed", "err", err)
+			return nil
+		}
+		rules, err := c.getEventCheckRules(header, parentState)
+		if err != nil {
+			log.Error("getEventCheckRules failed", "err", err)
+			return nil
+		}
+		return &blacklistValidator{
+			blacks: blacks,
+			rules:  rules,
+		}
+	}
 	// }
 	return nil
 }

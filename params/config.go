@@ -27,6 +27,7 @@ import (
 
 // Genesis hashes to enforce below configs on.
 var (
+	// TODO yqq: 2022-08-09 change genesisHash
 	MainnetGenesisHash = common.HexToHash("0x5751d1772ebc82d52d19d96157bb3f13ca8417217e3c0913adf15f04eb4cb144")
 	TestnetGenesisHash = common.HexToHash("0xb24b1124276b1250ad3b2c02623677bce3e76c1539f76dcdfe4c27ab991c1dad")
 )
@@ -42,7 +43,7 @@ var CheckpointOracles = map[common.Hash]*CheckpointOracleConfig{}
 var (
 	// MainnetChainConfig is the chain parameters to run a node on the main network.
 	MainnetChainConfig = &ChainConfig{
-		ChainID:             big.NewInt(128),
+		ChainID:             big.NewInt(2285), // 2285 for Peucliar-Mainnet
 		HomesteadBlock:      big.NewInt(0),
 		DAOForkBlock:        nil,
 		DAOForkSupport:      true,
@@ -54,10 +55,11 @@ var (
 		PetersburgBlock:     big.NewInt(0),
 		IstanbulBlock:       big.NewInt(0),
 		MuirGlacierBlock:    nil,
-		RedCoastBlock:       big.NewInt(6618800),
-		BerlinBlock:         big.NewInt(8577000),
-		LondonBlock:         big.NewInt(8577000),
-		SophonBlock:         big.NewInt(8577000),
+		// TODO yqq 2022-08-09: change this to activate these hard-forks on our chain begining.
+		// RedCoastBlock:       big.NewInt(6618800),
+		BerlinBlock:         big.NewInt(0),
+		LondonBlock:         big.NewInt(0),
+		// SophonBlock:         big.NewInt(0),
 		ArrowGlacierBlock:   nil,
 
 		Congress: &CongressConfig{
@@ -70,7 +72,7 @@ var (
 
 	// TestnetChainConfig contains the chain parameters to run a node on the YOLOv1 test network.
 	TestnetChainConfig = &ChainConfig{
-		ChainID:             big.NewInt(256),
+		ChainID:             big.NewInt(12285), // 12285 for Peucliar-Testnet
 		HomesteadBlock:      big.NewInt(0),
 		DAOForkBlock:        nil,
 		DAOForkSupport:      true,
@@ -82,10 +84,11 @@ var (
 		PetersburgBlock:     big.NewInt(0),
 		IstanbulBlock:       big.NewInt(0),
 		MuirGlacierBlock:    nil,
-		RedCoastBlock:       big.NewInt(6072600),
-		BerlinBlock:         big.NewInt(8290000),
-		LondonBlock:         big.NewInt(8290000),
-		SophonBlock:         big.NewInt(8290000),
+		// TODO yqq 2022-08-09: change this to activate these hard-forks on our chain begining.
+		// RedCoastBlock:       big.NewInt(6072600),
+		BerlinBlock:         big.NewInt(0),
+		LondonBlock:         big.NewInt(0),
+		// SophonBlock:         big.NewInt(0),
 		Congress: &CongressConfig{
 			Period: 3,
 			Epoch:  200,
@@ -116,18 +119,18 @@ var (
 	//
 	// This configuration is intentionally not using keyed fields to force anyone
 	// adding flags to the config to also have to set these fields.
-	AllEthashProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, new(EthashConfig), nil, nil}
+	AllEthashProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil,  new(EthashConfig), nil, nil}
 
 	// AllCliqueProtocolChanges contains every protocol change (EIPs) introduced
 	// and accepted by the Ethereum core developers into the Clique consensus.
 	//
 	// This configuration is intentionally not using keyed fields to force anyone
 	// adding flags to the config to also have to set these fields.
-	AllCliqueProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, nil, nil, &CliqueConfig{Period: 0, Epoch: 30000}, nil}
+	AllCliqueProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil,   &CliqueConfig{Period: 0, Epoch: 30000}, nil}
 
-	AllCongressProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, big.NewInt(2), big.NewInt(3), nil, nil, &CongressConfig{Period: 0, Epoch: 30000}}
+	AllCongressProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil , nil, &CongressConfig{Period: 0, Epoch: 30000}}
 
-	TestChainConfig = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, new(EthashConfig), nil, nil}
+	TestChainConfig = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil,  new(EthashConfig), nil, nil}
 	TestRules       = TestChainConfig.Rules(new(big.Int))
 )
 
@@ -212,8 +215,9 @@ type ChainConfig struct {
 	// the network that triggers the consensus upgrade.
 	TerminalTotalDifficulty *big.Int `json:"terminalTotalDifficulty,omitempty"`
 
-	RedCoastBlock *big.Int `json:"redCoastBlock,omitempty"` // RedCoast switch block (nil = no fork, set value ≥ 2 to activate it)
-	SophonBlock   *big.Int `json:"sophonBlock,omitempty"`   // Sophon switch block (nil = no fork, set > RedCoastBlock to activate it)
+	// TODO yqq 2022-08-09: note this 
+	// RedCoastBlock *big.Int `json:"redCoastBlock,omitempty"` // RedCoast switch block (nil = no fork, set value ≥ 2 to activate it)
+	// SophonBlock   *big.Int `json:"sophonBlock,omitempty"`   // Sophon switch block (nil = no fork, set > RedCoastBlock to activate it)
 
 	// Various consensus engines
 	Ethash   *EthashConfig   `json:"ethash,omitempty"`
@@ -266,7 +270,7 @@ func (c *ChainConfig) String() string {
 	default:
 		engine = "unknown"
 	}
-	return fmt.Sprintf("{ChainID: %v Homestead: %v DAO: %v DAOSupport: %v EIP150: %v EIP155: %v EIP158: %v Byzantium: %v Constantinople: %v Petersburg: %v Istanbul: %v, Muir Glacier: %v, RedCoastBlock: %v, Berlin: %v, London: %v, Sophon: %v, Engine: %v}",
+	return fmt.Sprintf("{ChainID: %v Homestead: %v DAO: %v DAOSupport: %v EIP150: %v EIP155: %v EIP158: %v Byzantium: %v Constantinople: %v Petersburg: %v Istanbul: %v, Muir Glacier: %v, Berlin: %v, London: %v, Engine: %v}",
 		c.ChainID,
 		c.HomesteadBlock,
 		c.DAOForkBlock,
@@ -279,10 +283,10 @@ func (c *ChainConfig) String() string {
 		c.PetersburgBlock,
 		c.IstanbulBlock,
 		c.MuirGlacierBlock,
-		c.RedCoastBlock,
+		// c.RedCoastBlock,
 		c.BerlinBlock,
 		c.LondonBlock,
-		c.SophonBlock,
+		// c.SophonBlock,
 		engine,
 	)
 }
@@ -362,15 +366,15 @@ func (c *ChainConfig) IsTerminalPoWBlock(parentTotalDiff *big.Int, totalDiff *bi
 	return parentTotalDiff.Cmp(c.TerminalTotalDifficulty) < 0 && totalDiff.Cmp(c.TerminalTotalDifficulty) >= 0
 }
 
-// IsRedCoast returns whether num represents a block number after the RedCoast fork
-func (c *ChainConfig) IsRedCoast(num *big.Int) bool {
-	return isForked(c.RedCoastBlock, num)
-}
+// // IsRedCoast returns whether num represents a block number after the RedCoast fork
+// func (c *ChainConfig) IsRedCoast(num *big.Int) bool {
+// 	return isForked(c.RedCoastBlock, num)
+// }
 
 // IsSophon returns whether num represents a block number after the SophonBlock fork
-func (c *ChainConfig) IsSophon(num *big.Int) bool {
-	return isForked(c.SophonBlock, num)
-}
+// func (c *ChainConfig) IsSophon(num *big.Int) bool {
+// 	return isForked(c.SophonBlock, num)
+// }
 
 // CheckCompatible checks whether scheduled fork transitions have been imported
 // with a mismatching chain configuration.
@@ -435,8 +439,8 @@ func (c *ChainConfig) CheckConfigForkOrder() error {
 	// congress fork
 	lastFork = fork{}
 	for _, cur := range []fork{
-		{name: "redCoastBlock", block: c.RedCoastBlock, minValue: big.NewInt(2)},
-		{name: "sophonBlock", block: c.SophonBlock},
+		// {name: "redCoastBlock", block: c.RedCoastBlock, minValue: big.NewInt(2)},
+		// {name: "sophonBlock", block: c.SophonBlock},
 	} {
 		// check minimal fork block
 		if cur.block != nil && cur.minValue != nil {
@@ -512,9 +516,9 @@ func (c *ChainConfig) checkCompatible(newcfg *ChainConfig, head *big.Int) *Confi
 	if isForkIncompatible(c.LondonBlock, newcfg.LondonBlock, head) {
 		return newCompatError("London fork block", c.LondonBlock, newcfg.LondonBlock)
 	}
-	if isForkIncompatible(c.RedCoastBlock, newcfg.RedCoastBlock, head) {
-		return newCompatError("RedCoast fork block", c.RedCoastBlock, newcfg.RedCoastBlock)
-	}
+	// if isForkIncompatible(c.SophonBlock, newcfg.SophonBlock, head) {
+	// 	return newCompatError("Sophon fork block", c.SophonBlock, newcfg.SophonBlock)
+	// }
 	if isForkIncompatible(c.ArrowGlacierBlock, newcfg.ArrowGlacierBlock, head) {
 		return newCompatError("Arrow Glacier fork block", c.ArrowGlacierBlock, newcfg.ArrowGlacierBlock)
 	}

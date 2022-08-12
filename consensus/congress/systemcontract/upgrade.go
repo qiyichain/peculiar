@@ -29,19 +29,21 @@ func ApplySystemContractUpgrade(version SysContractVersion, state *state.StateDB
 	}
 	height := header.Number
 
+	// TODO(yqq): We should initialize all system contracts in 
+	// congress.initializeSystemContracts at block 1, instead at here. 2022-08-10
 	var sysContracts []IUpgradeAction
 	switch version {
 	case SysContractV1:
 		sysContracts = []IUpgradeAction{
-			&hardForkSysGov{},
-			&hardForkAddressList{},
-			&hardForkValidatorsV1{},
-			&hardForkPunishV1{},
+			// &hardForkSysGov{},
+			// &hardForkAddressList{},
+			// &hardForkValidatorsV1{},
+			// &hardForkPunishV1{},
 		}
 	case SysContractV2:
 		sysContracts = []IUpgradeAction{
-			&hardForkAddressListV2{},
-			&hardForkValidatorsV2{},
+			// &hardForkAddressListV2{},
+			// &hardForkValidatorsV2{},
 		}
 	default:
 		log.Crit("unsupported SysContractVersion", "version", version)

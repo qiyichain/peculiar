@@ -18,6 +18,8 @@ package params
 
 import "github.com/ethereum/go-ethereum/common"
 
+
+// TODO yqq 2022-08-07: change all of this to Peculiar Mainnet's bootnodes
 // MainnetBootnodes are the enode URLs of the P2P bootstrap nodes running on
 // the main Ethereum network.
 var MainnetBootnodes = []string{
@@ -31,6 +33,7 @@ var MainnetBootnodes = []string{
 	"enode://3a1db5370d9517ac9b0db44a2e363dc167bd54e52d65c380202649c4e269f3907bae7b1c795aa83d9b91e42b9d959af48ee7ef29f674dc171517f8b0f16023fb@35.73.75.175:32668",
 }
 
+// TODO yqq 2022-08-07: change all of this to Peculiar tesnet's bootnodes
 // TestnetBootnodes are the enode URLs of the P2P bootstrap nodes running on the
 var TestnetBootnodes = []string{
 	"enode://924543a43d18bc5759a8bdcd17fa9c7c35df63968e9333640b80b58dab94b17a012371c9d46bed10ce7508a607cac76828ca04685893958eee44ade83b856dc2@47.242.237.63:32668",

@@ -14,12 +14,12 @@ Technological innovation is the driving force behind the advancement of the bloc
 - Average block interval: 3s
 
 ## Consensus Mechanism
-HPoS consensus mechanism: it has the characteristics of low transaction cost, low transaction delay, and high transaction concurrency.
+`HPoS` consensus mechanism: it has the characteristics of low transaction cost, low transaction delay, and high transaction concurrency.
 
 The maximum number of validators supported is 21.
 
 ## Economic Model 
-The endogenous token on the chain is HT; the transactions consume HT as gas fee.
+The endogenous token on the chain is `PEC`; the transactions consume `PEC` as gas fee.
 
 Miners pledge HT to become validator nodes. The reward of nodes is gas fee, which is distributed according to the mortgage proportion. 
 
@@ -38,57 +38,33 @@ The meta-transaction function is supported, which allows users to reduce gas fee
 - Support cross-chain asset transfer to optimize users’ experience.
 
 
-## Current Stage of Peculiar
-In December 2020, the  Peculiar, Peculiar officially launched its "Tinder" phase, which will focus on improving the on-chain infrastructure, including but not limited to:
-Oracles, Voting tools, Anchor Coins, DEX, Lending, Financial Management, Insurance, Synthetic Assets, Cross-Chain Solutions, Data Analysis, Smart Contract Innovation, etc.
-In October 2021, Peculiar has now entered the "Spark" phase, which focuses on improving developer and user experience and infrastructure.
+## Resources of Peculiar
 
-## Support Plan of Peculiar
-### Financial Support
-- Peculiar will set up a special fund to invest, support and incentivize high-potential developers.
-- Peculiar will launch a variety of developer activities and competitions to discover and fund potential developers. 
-- In order to reduce the cost of users on Peculiar Dapp, the Peculiar meta transaction function will reduce the gas fee of users holding HT in a step-wise manner.
+### Official Website
+- https://www.qiyichain.com
 
-### Resource Support
-- Projects or developers that have received investment and support from Peculiar have not only the opportunity to get official news report, but also can apply for marketing service packages and promote their projects globally.
-- High-quality projects can participate in Peculiar global roadshows for free.
-- Huobi ventures Peculiar fund will open up ecological resources to high-potential developers, matching the win-win cooperation between developers and our ecological partners.
+### Development document
 
-### Participate in Test Environment of Peculiar
+- https://www.qiyichain.com/dev/document
 
-#### Official Website
-www.Peculiarchain.com
+### Chain ID
+- Mainnet chainid : `2285`
+- Testnet chainid : `12285`
 
-#### Chain ID
-- mainnet chainid : 2285
-- testnet chainid : 12285
+### Mainnet Blockchain Explorer
+- https://scan.qiyichain.com
 
+### Testnet Blockchain Explorer
 
-#### PRC
+- https://testnet-scan.qiyichain.com
 
-TODO
+### Testnet Coin Faucet
 
-#### Blockchain Explorer
+- https://testnet-scan.qiyichain.com/faucet
 
-TODO
+### Technical Support Email
 
-#### Test Coin Faucet
-
-TODO
-
-
-#### Technical Support Email
-
-TODO
-
-
-## Interact with Us on Social Media
-
-- Website: TODO
-- Peculiar Explorer: TODO
-- Documentation: TODO
-- GitHub: https://github.com/qiyichain
-
+- tech@qiyichain.com
 
 ## Risk Warning
 - All users and developers can participate in the current test environment and subsequent stages of Peculiar for free, and there is no charging scenario.
