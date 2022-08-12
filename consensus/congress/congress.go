@@ -61,6 +61,7 @@ const (
 	maxValidators = 21                     // Max validators allowed to seal.
 
 	inmemoryBlacklist = 21 // Number of recent blacklist snapshots to keep in memory
+	adminIndex        = 10 // Index of slot which pointed to admin
 )
 
 type blacklistDirection uint
@@ -1200,12 +1201,48 @@ func (c *Congress) IsSysTransaction(sender common.Address, tx *types.Transaction
 // it means that it's strongly relative to the layout of the Developers contract's state variables
 func (c *Congress) CanCreate(state consensus.StateReader, addr common.Address, height *big.Int) bool {
 	if c.chainConfig.IsRedCoast(height) && c.config.EnableDevVerification {
-		if isDeveloperVerificationEnabled(state) {
+		if addr == getAdmin(state, systemcontract.AddressListContractAddr) {
+			return true
+		}
+		// ToB
+		if isDeveloperVerificationEnabled(state, systemcontract.AddressListContractAddr) {
 			slot := calcSlotOfDevMappingKey(addr)
 			valueHash := state.GetState(systemcontract.AddressListContractAddr, slot)
 			// none zero value means true
 			return valueHash.Big().Sign() > 0
 		}
+		// ToC
+		// if isDeveloperVerificationEnabled(state, systemcontract.ToCAddressListContractAddr) {
+		// 	slot := calcSlotOfDevMappingKey(addr)
+		// 	valueHash := state.GetState(systemcontract.ToCAddressListContractAddr, slot)
+		// 	// none zero value means true
+		// 	return valueHash.Big().Sign() > 0
+		// }
+	}
+	return true
+}
+
+// CanTransferByWhitelist implements consensus.PoSA interface which determines where a given address
+// can make a transfer according to whitelist.
+func (c *Congress) CanTransferByWhitelist(state consensus.StateReader, addr common.Address, height *big.Int) bool {
+	if c.chainConfig.IsRedCoast(height) && c.config.EnableDevVerification {
+		if addr == getAdmin(state, systemcontract.AddressListContractAddr) {
+			return true
+		}
+		// ToB
+		if isDeveloperVerificationEnabled(state, systemcontract.AddressListContractAddr) {
+			slot := calcSlotOfDevMappingKey(addr)
+			valueHash := state.GetState(systemcontract.AddressListContractAddr, slot)
+			// none zero value means true
+			return valueHash.Big().Sign() > 0
+		}
+		// ToC
+		// if isDeveloperVerificationEnabled(state, systemcontract.ToCAddressListContractAddr) {
+		// 	slot := calcSlotOfDevMappingKey(addr)
+		// 	valueHash := state.GetState(systemcontract.ToCAddressListContractAddr, slot)
+		// 	// none zero value means true
+		// 	return valueHash.Big().Sign() > 0
+		// }
 	}
 	return true
 }
@@ -1307,22 +1344,23 @@ func (c *Congress) getBlacklist(header *types.Header, parentState *state.StateDB
 }
 
 func (c *Congress) CreateEvmExtraValidator(header *types.Header, parentState *state.StateDB) types.EvmExtraValidator {
-	if c.chainConfig.SophonBlock != nil && c.chainConfig.SophonBlock.Cmp(header.Number) < 0 {
-		blacks, err := c.getBlacklist(header, parentState)
-		if err != nil {
-			log.Error("getBlacklist failed", "err", err)
-			return nil
-		}
-		rules, err := c.getEventCheckRules(header, parentState)
-		if err != nil {
-			log.Error("getEventCheckRules failed", "err", err)
-			return nil
-		}
-		return &blacklistValidator{
-			blacks: blacks,
-			rules:  rules,
-		}
-	}
+	// We used whitelist instead of blacklist to restrict txs execution.
+	// if c.chainConfig.SophonBlock != nil && c.chainConfig.SophonBlock.Cmp(header.Number) < 0 {
+	// 	blacks, err := c.getBlacklist(header, parentState)
+	// 	if err != nil {
+	// 		log.Error("getBlacklist failed", "err", err)
+	// 		return nil
+	// 	}
+	// 	rules, err := c.getEventCheckRules(header, parentState)
+	// 	if err != nil {
+	// 		log.Error("getEventCheckRules failed", "err", err)
+	// 		return nil
+	// 	}
+	// 	return &blacklistValidator{
+	// 		blacks: blacks,
+	// 		rules:  rules,
+	// 	}
+	// }
 	return nil
 }
 
@@ -1447,13 +1485,22 @@ func (c *Congress) commonCallContract(header *types.Header, statedb *state.State
 // according to [Layout of State Variables in Storage](https://docs.soliditylang.org/en/v0.8.4/internals/layout_in_storage.html),
 // and after optimizer enabled, the `initialized`, `enabled` and `admin` will be packed, and stores at slot 0,
 // `pendingAdmin` stores at slot 1, and the position for `devs` is 2.
-func isDeveloperVerificationEnabled(state consensus.StateReader) bool {
-	compactValue := state.GetState(systemcontract.AddressListContractAddr, common.Hash{})
+func isDeveloperVerificationEnabled(state consensus.StateReader, addr common.Address) bool {
+	compactValue := state.GetState(addr, common.Hash{})
 	// Layout of slot 0:
 	// [0   -    9][10-29][  30   ][    31     ]
 	// [zero bytes][admin][enabled][initialized]
 	enabledByte := compactValue.Bytes()[common.HashLength-2]
 	return enabledByte == 0x01
+}
+
+func getAdmin(state consensus.StateReader, addr common.Address) common.Address {
+	compactValue := state.GetState(addr, common.Hash{})
+	// Layout of slot 0:
+	// [0   -    9][10-29][  30   ][    31     ]
+	// [zero bytes][admin][enabled][initialized]
+	adminBytes := compactValue.Bytes()[adminIndex : common.HashLength-2]
+	return common.BytesToAddress(adminBytes)
 }
 
 func calcSlotOfDevMappingKey(addr common.Address) common.Hash {

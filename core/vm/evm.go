@@ -42,6 +42,8 @@ type (
 	GetHashFunc func(uint64) common.Hash
 	// CanCreateFunc is the signature of a contract creation guard function
 	CanCreateFunc func(db StateDB, address common.Address, height *big.Int) bool
+	// IsPermittedTransferFunc is signature of a transfer guard function which is limited of whitelist
+	IsPermittedTransferFunc func(StateDB, common.Address, *big.Int) bool
 )
 
 func (evm *EVM) precompile(addr common.Address) (PrecompiledContract, bool) {
@@ -74,6 +76,8 @@ type BlockContext struct {
 	CanCreate CanCreateFunc
 	// ExtraValidator do some extra validation to a message during it's execution
 	ExtraValidator types.EvmExtraValidator
+	// IsPermittedTransfer returns whether a given address can make a transfer
+	IsPermittedTransfer IsPermittedTransferFunc
 
 	// Block information
 	Coinbase    common.Address // Provides information for COINBASE
@@ -181,16 +185,19 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 	}
 
 	// Check whether the involved addresses are denied if needed
-	if evm.Context.ExtraValidator != nil && evm.depth > 0 {
-		if evm.Context.ExtraValidator.IsAddressDenied(caller.Address(), common.CheckFrom) ||
-			evm.Context.ExtraValidator.IsAddressDenied(addr, common.CheckTo) {
-			return nil, gas, types.ErrAddressDenied
-		}
-	}
+	// if evm.Context.ExtraValidator != nil && evm.depth > 0 {
+	// 	if evm.Context.ExtraValidator.IsAddressDenied(caller.Address(), common.CheckFrom) ||
+	// 		evm.Context.ExtraValidator.IsAddressDenied(addr, common.CheckTo) {
+	// 		return nil, gas, types.ErrAddressDenied
+	// 	}
+	// }
 
 	// Fail if we're trying to transfer more than the available balance
 	if value.Sign() != 0 && !evm.Context.CanTransfer(evm.StateDB, caller.Address(), value) {
 		return nil, gas, ErrInsufficientBalance
+	}
+	if value.Sign() != 0 && !evm.Context.IsPermittedTransfer(evm.StateDB, caller.Address(), evm.Context.BlockNumber) {
+		return nil, gas, ErrIllegalTransfer
 	}
 	snapshot := evm.StateDB.Snapshot()
 	p, isPrecompile := evm.precompile(addr)
@@ -279,12 +286,12 @@ func (evm *EVM) CallCode(caller ContractRef, addr common.Address, input []byte, 
 	}
 
 	// Check whether the involved addresses are denied if needed
-	if evm.Context.ExtraValidator != nil {
-		if evm.Context.ExtraValidator.IsAddressDenied(caller.Address(), common.CheckFrom) ||
-			evm.Context.ExtraValidator.IsAddressDenied(addr, common.CheckTo) {
-			return nil, gas, types.ErrAddressDenied
-		}
-	}
+	// if evm.Context.ExtraValidator != nil {
+	// 	if evm.Context.ExtraValidator.IsAddressDenied(caller.Address(), common.CheckFrom) ||
+	// 		evm.Context.ExtraValidator.IsAddressDenied(addr, common.CheckTo) {
+	// 		return nil, gas, types.ErrAddressDenied
+	// 	}
+	// }
 
 	// Fail if we're trying to transfer more than the available balance
 	// Note although it's noop to transfer X ether to caller itself. But
@@ -292,6 +299,9 @@ func (evm *EVM) CallCode(caller ContractRef, addr common.Address, input []byte, 
 	// over-charging itself. So the check here is necessary.
 	if !evm.Context.CanTransfer(evm.StateDB, caller.Address(), value) {
 		return nil, gas, ErrInsufficientBalance
+	}
+	if value.Sign() != 0 && !evm.Context.IsPermittedTransfer(evm.StateDB, caller.Address(), evm.Context.BlockNumber) {
+		return nil, gas, ErrIllegalTransfer
 	}
 	var snapshot = evm.StateDB.Snapshot()
 
@@ -339,12 +349,12 @@ func (evm *EVM) DelegateCall(caller ContractRef, addr common.Address, input []by
 	}
 
 	// Check whether the involved addresses are denied if needed
-	if evm.Context.ExtraValidator != nil {
-		if evm.Context.ExtraValidator.IsAddressDenied(caller.Address(), common.CheckFrom) ||
-			evm.Context.ExtraValidator.IsAddressDenied(addr, common.CheckTo) {
-			return nil, gas, types.ErrAddressDenied
-		}
-	}
+	// if evm.Context.ExtraValidator != nil {
+	// 	if evm.Context.ExtraValidator.IsAddressDenied(caller.Address(), common.CheckFrom) ||
+	// 		evm.Context.ExtraValidator.IsAddressDenied(addr, common.CheckTo) {
+	// 		return nil, gas, types.ErrAddressDenied
+	// 	}
+	// }
 
 	var snapshot = evm.StateDB.Snapshot()
 
@@ -390,12 +400,12 @@ func (evm *EVM) StaticCall(caller ContractRef, addr common.Address, input []byte
 	}
 
 	// Check whether the involved addresses are denied if needed
-	if evm.Context.ExtraValidator != nil {
-		if evm.Context.ExtraValidator.IsAddressDenied(caller.Address(), common.CheckFrom) ||
-			evm.Context.ExtraValidator.IsAddressDenied(addr, common.CheckTo) {
-			return nil, gas, types.ErrAddressDenied
-		}
-	}
+	// if evm.Context.ExtraValidator != nil {
+	// 	if evm.Context.ExtraValidator.IsAddressDenied(caller.Address(), common.CheckFrom) ||
+	// 		evm.Context.ExtraValidator.IsAddressDenied(addr, common.CheckTo) {
+	// 		return nil, gas, types.ErrAddressDenied
+	// 	}
+	// }
 
 	// We take a snapshot here. This is a bit counter-intuitive, and could probably be skipped.
 	// However, even a staticcall is considered a 'touch'. On mainnet, static calls were introduced
