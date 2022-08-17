@@ -53,16 +53,17 @@ func NewEVMBlockContext(header *types.Header, chain ChainContext, author *common
 		baseFee = new(big.Int).Set(header.BaseFee)
 	}
 	return vm.BlockContext{
-		CanTransfer: CanTransfer,
-		Transfer:    Transfer,
-		GetHash:     GetHashFn(header, chain),
-		Coinbase:    beneficiary,
-		BlockNumber: new(big.Int).Set(header.Number),
-		Time:        new(big.Int).SetUint64(header.Time),
-		Difficulty:  new(big.Int).Set(header.Difficulty),
-		BaseFee:     baseFee,
-		GasLimit:    header.GasLimit,
-		CanCreate:   GetCanCreateFn(chain),
+		CanTransfer:         CanTransfer,
+		Transfer:            Transfer,
+		GetHash:             GetHashFn(header, chain),
+		Coinbase:            beneficiary,
+		BlockNumber:         new(big.Int).Set(header.Number),
+		Time:                new(big.Int).SetUint64(header.Time),
+		Difficulty:          new(big.Int).Set(header.Difficulty),
+		BaseFee:             baseFee,
+		GasLimit:            header.GasLimit,
+		CanCreate:           GetCanCreateFn(chain),
+		IsPermittedTransfer: IsPermittedTransfer(chain),
 	}
 }
 
@@ -130,6 +131,24 @@ func GetCanCreateFn(chain ChainContext) vm.CanCreateFunc {
 	if isPoSA {
 		return func(db vm.StateDB, address common.Address, height *big.Int) bool {
 			return posa.CanCreate(db, address, height)
+		}
+	}
+	return func(db vm.StateDB, address common.Address, height *big.Int) bool {
+		return true
+	}
+}
+
+// Currently only whitelist account can make a transfer when chain run on POSA.
+func IsPermittedTransfer(chain ChainContext) vm.IsPermittedTransferFunc {
+	if reflect2.IsNil(chain) || chain.Engine() == nil {
+		return func(db vm.StateDB, address common.Address, height *big.Int) bool {
+			return true
+		}
+	}
+	posa, isPoSA := chain.Engine().(consensus.PoSA)
+	if isPoSA {
+		return func(db vm.StateDB, address common.Address, height *big.Int) bool {
+			return posa.CanTransferByWhitelist(db, address, height)
 		}
 	}
 	return func(db vm.StateDB, address common.Address, height *big.Int) bool {

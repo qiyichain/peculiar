@@ -61,6 +61,7 @@ const (
 	maxValidators = 21                     // Max validators allowed to seal.
 
 	inmemoryBlacklist = 21 // Number of recent blacklist snapshots to keep in memory
+	adminIndex        = 10 // Index of slot which pointed to admin
 )
 
 type blacklistDirection uint
@@ -655,7 +656,8 @@ func (c *Congress) Finalize(chain consensus.ChainHeaderReader, header *types.Hea
 	}
 
 	//handle system governance Proposal
-	if chain.Config().IsRedCoast(header.Number) {
+	//if chain.Config().IsSophon(header.Number) {
+	if true {
 		proposalCount, err := c.getPassedProposalCount(chain, header, state)
 		if err != nil {
 			return err
@@ -741,7 +743,7 @@ func (c *Congress) FinalizeAndAssemble(chain consensus.ChainHeaderReader, header
 	// Even if the miner is not `running`, it's still working,
 	// the 'miner.worker' will try to FinalizeAndAssemble a block,
 	// in this case, the signTxFn is not set. A `non-miner node` can't execute system governance proposal.
-	if c.signTxFn != nil && chain.Config().IsRedCoast(header.Number) {
+	if c.signTxFn != nil && true /*chain.Config().IsSophon(header.Number) */ {
 		proposalCount, err := c.getPassedProposalCount(chain, header, state)
 		if err != nil {
 			return nil, nil, err
@@ -871,12 +873,30 @@ func (c *Congress) initializeSystemContracts(chain consensus.ChainHeaderReader, 
 		addr    common.Address
 		packFun func() ([]byte, error)
 	}{
+		// TODO(yqq), add other system contracts, 2022-08-10
 		{systemcontract.ValidatorsContractAddr, func() ([]byte, error) {
-			return c.abi[systemcontract.ValidatorsContractName].Pack(method, genesisValidators)
+			admin := systemcontract.GetAdminByChainId(c.chainConfig.ChainID)
+			managers := make([]common.Address, 0)
+			// NOTE: we use admin to manage all validators
+			for i:= 0; i < len(genesisValidators); i++ {
+				managers = append(managers, admin)
+			}
+			return c.abi[systemcontract.ValidatorsContractName].Pack(method, genesisValidators, managers, admin)
 		}},
-		{systemcontract.PunishContractAddr, func() ([]byte, error) { return c.abi[systemcontract.PunishContractName].Pack(method) }},
-		{systemcontract.ProposalAddr, func() ([]byte, error) {
-			return c.abi[systemcontract.ProposalContractName].Pack(method, genesisValidators)
+		{systemcontract.PunishContractAddr, func() ([]byte, error) {
+			return c.abi[systemcontract.PunishContractName].Pack(method)
+		}},
+		{systemcontract.AddressListContractAddr, func() ([]byte, error) {
+			admin := systemcontract.GetAdminByChainId(c.chainConfig.ChainID)
+			return c.abi[systemcontract.AddressListContractName].Pack(method, admin)
+		}},
+		{systemcontract.UserAddressListContractAddr, func() ([]byte, error) {
+			admin := systemcontract.GetAdminByChainId(c.chainConfig.ChainID)
+			return c.abi[systemcontract.UserAddressListContractName].Pack(method, admin)
+		}},
+		{systemcontract.SysGovContractAddr, func() ([]byte, error) {
+			admin := systemcontract.GetAdminByChainId(c.chainConfig.ChainID)
+			return c.abi[systemcontract.SysGovContractName].Pack(method, admin)
 		}},
 	}
 
@@ -1168,12 +1188,12 @@ func encodeSigHeader(w io.Writer, header *types.Header) {
 }
 
 func (c *Congress) PreHandle(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB) error {
-	if c.chainConfig.RedCoastBlock != nil && c.chainConfig.RedCoastBlock.Cmp(header.Number) == 0 {
-		return systemcontract.ApplySystemContractUpgrade(systemcontract.SysContractV1, state, header, newChainContext(chain, c), c.chainConfig)
-	}
-	if c.chainConfig.SophonBlock != nil && c.chainConfig.SophonBlock.Cmp(header.Number) == 0 {
-		return systemcontract.ApplySystemContractUpgrade(systemcontract.SysContractV2, state, header, newChainContext(chain, c), c.chainConfig)
-	}
+	// if c.chainConfig.RedCoastBlock != nil && c.chainConfig.RedCoastBlock.Cmp(header.Number) == 0 {
+	// 	return systemcontract.ApplySystemContractUpgrade(systemcontract.SysContractV1, state, header, newChainContext(chain, c), c.chainConfig)
+	// }
+	// if c.chainConfig.SophonBlock != nil && c.chainConfig.SophonBlock.Cmp(header.Number) == 0 {
+	// 	return systemcontract.ApplySystemContractUpgrade(systemcontract.SysContractV2, state, header, newChainContext(chain, c), c.chainConfig)
+	// }
 	return nil
 }
 
@@ -1198,9 +1218,41 @@ func (c *Congress) IsSysTransaction(sender common.Address, tx *types.Transaction
 //
 // This will queries the system Developers contract, by DIRECTLY to get the target slot value of the contract,
 // it means that it's strongly relative to the layout of the Developers contract's state variables
+// TODO yqq 2022-08-09: note this
 func (c *Congress) CanCreate(state consensus.StateReader, addr common.Address, height *big.Int) bool {
-	if c.chainConfig.IsRedCoast(height) && c.config.EnableDevVerification {
-		if isDeveloperVerificationEnabled(state) {
+	if c.config.EnableDevVerification {
+		// admin is not in devs, but it could adds itself to devs.
+		//
+		// if addr == getAdmin(state, systemcontract.AddressListContractAddr) {
+		// 	return true
+		// }
+		if isDeveloperVerificationEnabled(state, systemcontract.AddressListContractAddr) {
+			slot := calcSlotOfDevMappingKey(addr)
+			valueHash := state.GetState(systemcontract.AddressListContractAddr, slot)
+			// none zero value means true
+			return valueHash.Big().Sign() > 0
+		}
+	}
+	return true
+}
+
+// CanTransferByWhitelist implements consensus.PoSA interface which determines where a given address
+// can make a transfer according to whitelist.
+func (c *Congress) CanTransferByWhitelist(state consensus.StateReader, addr common.Address, height *big.Int) bool {
+	if c.config.EnableDevVerification {
+		// by yqq 2022-08-12
+		// NOTE(yqq): The 'admin' should be called 'banker' which can deposit tokens to all business-address(B-end).
+		// TODO(yqq): To improve performance, we should hard-code the 'banker', as the 'banker' is immutable.
+		// if addr == getAdmin(state, systemcontract.AddressListContractAddr) {
+		// 	return true
+		// }
+		banker := systemcontract.GetAdminByChainId(c.chainConfig.ChainID)
+		if addr == banker {
+			return true
+		}
+
+		// check whether sender is in whitelist or not
+		if isDeveloperVerificationEnabled(state, systemcontract.AddressListContractAddr) {
 			slot := calcSlotOfDevMappingKey(addr)
 			valueHash := state.GetState(systemcontract.AddressListContractAddr, slot)
 			// none zero value means true
@@ -1215,20 +1267,20 @@ func (c *Congress) CanCreate(state consensus.StateReader, addr common.Address, h
 func (c *Congress) ValidateTx(sender common.Address, tx *types.Transaction, header *types.Header, parentState *state.StateDB) error {
 	// Must use the parent state for current validation,
 	// so we must starting the validation after redCoastBlock
-	if c.chainConfig.RedCoastBlock != nil && c.chainConfig.RedCoastBlock.Cmp(header.Number) < 0 {
-		m, err := c.getBlacklist(header, parentState)
-		if err != nil {
-			return err
-		}
-		if d, exist := m[sender]; exist && (d != DirectionTo) {
-			log.Trace("Hit blacklist", "tx", tx.Hash().String(), "addr", sender.String(), "direction", d)
+
+	// NOTE: We have merged RedCoast and Sophon to our genesis system contract. yqq-2022-08-10
+	m, err := c.getBlacklist(header, parentState)
+	if err != nil {
+		return err
+	}
+	if d, exist := m[sender]; exist && (d != DirectionTo) {
+		log.Trace("Hit blacklist", "tx", tx.Hash().String(), "addr", sender.String(), "direction", d)
+		return types.ErrAddressDenied
+	}
+	if to := tx.To(); to != nil {
+		if d, exist := m[*to]; exist && (d != DirectionFrom) {
+			log.Trace("Hit blacklist", "tx", tx.Hash().String(), "addr", to.String(), "direction", d)
 			return types.ErrAddressDenied
-		}
-		if to := tx.To(); to != nil {
-			if d, exist := m[*to]; exist && (d != DirectionFrom) {
-				log.Trace("Hit blacklist", "tx", tx.Hash().String(), "addr", to.String(), "direction", d)
-				return types.ErrAddressDenied
-			}
 		}
 	}
 	return nil
@@ -1250,7 +1302,7 @@ func (c *Congress) getBlacklist(header *types.Header, parentState *state.StateDB
 	}
 
 	// if the last updates is long ago, we don't need to get blacklist from the contract.
-	if c.chainConfig.SophonBlock != nil && header.Number.Cmp(c.chainConfig.SophonBlock) > 0 {
+	if header.Number.Cmp(common.Big2) > 0 {
 		num := header.Number.Uint64()
 		lastUpdated := lastBlacklistUpdatedNumber(parentState)
 		if num >= 2 && num > lastUpdated+1 {
@@ -1307,7 +1359,8 @@ func (c *Congress) getBlacklist(header *types.Header, parentState *state.StateDB
 }
 
 func (c *Congress) CreateEvmExtraValidator(header *types.Header, parentState *state.StateDB) types.EvmExtraValidator {
-	if c.chainConfig.SophonBlock != nil && c.chainConfig.SophonBlock.Cmp(header.Number) < 0 {
+	// TODO(yqq): we disable blacklist at genesis block. Shall we open this ?
+	if header.Number.Cmp(common.Big1) > 0 {
 		blacks, err := c.getBlacklist(header, parentState)
 		if err != nil {
 			log.Error("getBlacklist failed", "err", err)
@@ -1447,13 +1500,23 @@ func (c *Congress) commonCallContract(header *types.Header, statedb *state.State
 // according to [Layout of State Variables in Storage](https://docs.soliditylang.org/en/v0.8.4/internals/layout_in_storage.html),
 // and after optimizer enabled, the `initialized`, `enabled` and `admin` will be packed, and stores at slot 0,
 // `pendingAdmin` stores at slot 1, and the position for `devs` is 2.
-func isDeveloperVerificationEnabled(state consensus.StateReader) bool {
-	compactValue := state.GetState(systemcontract.AddressListContractAddr, common.Hash{})
+func isDeveloperVerificationEnabled(state consensus.StateReader, addr common.Address) bool {
+	compactValue := state.GetState(addr, common.Hash{})
 	// Layout of slot 0:
 	// [0   -    9][10-29][  30   ][    31     ]
 	// [zero bytes][admin][enabled][initialized]
 	enabledByte := compactValue.Bytes()[common.HashLength-2]
 	return enabledByte == 0x01
+}
+
+// getAdmin to get the admin from contract storage, admin is 'banker' in actually.
+func getAdmin(state consensus.StateReader, addr common.Address) common.Address {
+	compactValue := state.GetState(addr, common.Hash{})
+	// Layout of slot 0:
+	// [0   -    9][10-29][  30   ][    31     ]
+	// [zero bytes][admin][enabled][initialized]
+	adminBytes := compactValue.Bytes()[adminIndex : adminIndex + common.AddressLength]
+	return common.BytesToAddress(adminBytes)
 }
 
 func calcSlotOfDevMappingKey(addr common.Address) common.Hash {

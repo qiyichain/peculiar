@@ -366,6 +366,13 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		return nil, fmt.Errorf("%w: address %v", ErrInsufficientFundsForTransfer, msg.From().Hex())
 	}
 
+	// Check if be permitted transfer.
+	if msg.Value().Sign() > 0 && st.evm.Context.IsPermittedTransfer != nil {
+		if !st.evm.Context.IsPermittedTransfer(st.evm.StateDB, msg.From(), st.evm.Context.BlockNumber) {
+			return nil, ErrUnauthorizedTransfer
+		}
+	}
+
 	// Set up the initial access list.
 	if rules := st.evm.ChainConfig().Rules(st.evm.Context.BlockNumber); rules.IsBerlin {
 		st.state.PrepareAccessList(msg.From(), msg.To(), vm.ActivePrecompiles(rules), msg.AccessList())
@@ -373,9 +380,10 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	// Check if can create
 	if contractCreation && st.evm.Context.CanCreate != nil {
 		if !st.evm.Context.CanCreate(st.evm.StateDB, msg.From(), st.evm.Context.BlockNumber) {
-			return nil, ErrUnauthorizedDeveloper
+			return nil, ErrUnauthorizedCreate
 		}
 	}
+
 
 	var (
 		ret   []byte

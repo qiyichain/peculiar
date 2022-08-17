@@ -42,6 +42,8 @@ type (
 	GetHashFunc func(uint64) common.Hash
 	// CanCreateFunc is the signature of a contract creation guard function
 	CanCreateFunc func(db StateDB, address common.Address, height *big.Int) bool
+	// IsPermittedTransferFunc is signature of a transfer guard function which is limited of whitelist
+	IsPermittedTransferFunc func(StateDB, common.Address, *big.Int) bool
 )
 
 func (evm *EVM) precompile(addr common.Address) (PrecompiledContract, bool) {
@@ -74,6 +76,8 @@ type BlockContext struct {
 	CanCreate CanCreateFunc
 	// ExtraValidator do some extra validation to a message during it's execution
 	ExtraValidator types.EvmExtraValidator
+	// IsPermittedTransfer returns whether a given address can make a transfer
+	IsPermittedTransfer IsPermittedTransferFunc
 
 	// Block information
 	Coinbase    common.Address // Provides information for COINBASE
@@ -192,6 +196,10 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 	if value.Sign() != 0 && !evm.Context.CanTransfer(evm.StateDB, caller.Address(), value) {
 		return nil, gas, ErrInsufficientBalance
 	}
+
+	// FIX(yqq): In principle, we must allow all address which has enough gas to call contract. 2022-08-12
+	// 
+
 	snapshot := evm.StateDB.Snapshot()
 	p, isPrecompile := evm.precompile(addr)
 
@@ -293,6 +301,11 @@ func (evm *EVM) CallCode(caller ContractRef, addr common.Address, input []byte, 
 	if !evm.Context.CanTransfer(evm.StateDB, caller.Address(), value) {
 		return nil, gas, ErrInsufficientBalance
 	}
+
+	// FIX(yqq): In principle, we must allow all address which has enough gas to call contract. 2022-08-12
+	//
+
+
 	var snapshot = evm.StateDB.Snapshot()
 
 	// Invoke tracer hooks that signal entering/exiting a call frame
