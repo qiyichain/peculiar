@@ -6,8 +6,9 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
-	"path/filepath"
 
+	"github.com/ethereum/go-ethereum/cmd/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -49,7 +50,14 @@ func appendAccounts(path string, accounts []*ecdsa.PrivateKey) error {
 func loadAccounts(path string) ([]*ecdsa.PrivateKey, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		if os.IsNotExist(err) {
+			file, err = os.Create(path)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
 	}
 	defer file.Close()
 
@@ -67,5 +75,44 @@ func loadAccounts(path string) ([]*ecdsa.PrivateKey, error) {
 }
 
 func getStorePath() string {
-	return filepath.Join(os.Getenv("HOME"), storePath)
+	return storePath
+}
+
+func writeContractAddrs(path string, addrs []common.Address) error {
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	lines := make([]string, 0)
+	for _, addr := range addrs {
+		lines = append(lines, addr.String())
+	}
+
+	w := bufio.NewWriter(file)
+	for _, line := range lines {
+		fmt.Fprintln(w, line)
+	}
+	return w.Flush()
+}
+
+func loadContractAddrs(path string) ([]common.Address, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			utils.Fatalf("Please use deploy721 or deply1155 commands to deploy contracts on chain first")
+		}
+		return nil, err
+	}
+	defer file.Close()
+
+	addrs := make([]common.Address, 0)
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		addr := common.HexToAddress(scanner.Text())
+		addrs = append(addrs, addr)
+	}
+
+	return addrs, scanner.Err()
 }

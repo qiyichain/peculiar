@@ -2,14 +2,12 @@ package main
 
 import (
 	"fmt"
-	"math/big"
 	"os"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/fdlimit"
 	"github.com/ethereum/go-ethereum/internal/flags"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -21,18 +19,33 @@ var (
 
 // const test params
 var (
-	receiver = common.HexToAddress("0x4Bee7F41037532509368b7B4CA8255b44Dd8Fb77")
-	fee      = new(big.Int).Mul(big.NewInt(10), big.NewInt(params.Ether))
+	receiver                = common.HexToAddress("0xf513e4e5Ded9B510780D016c482fC158209DE9AA")
+	AddressListContractAddr = common.HexToAddress("0x000000000000000000000000000000000000F003")
+	ERC721OwnerAddr         = common.HexToAddress("0xf513e4e5Ded9B510780D016c482fC158209DE9AA")
 
-	hbTransferLimit    = uint64(21000)
-	tokenTransferLimit = uint64(100000)
+	// gasLimit
+	ethTransferLimit         = uint64(21000)
+	tokenTransferLimit       = uint64(100000)
+	addDeveloperLimit        = uint64(100000)
+	deployERC721Limit        = uint64(4000000)
+	ERC721MintLimit          = uint64(150000)
+	ERC721TransferTokenLimit = uint64(100000)
+
+	// sig
 	tokenTransferSig   = "a9059cbb"
+	addDeveloperSig    = "22fbf1e8"
+	ERC721CurrentIDSig = "01ec915a"
+	ERC721MintSig      = "4c2f6dd3"
+	ERC721TransferSig  = "9dd3045b"
+
+	leftSpace   = 31
+	uriMetaData = byte(64)
 
 	defaultDecimal = 18
 
-	jobsPerThread = 20
+	jobsPerThread = 16
 
-	storePath = ".keys"
+	storePath = "/data/stress-test/keys"
 )
 
 var app *cli.App
@@ -40,8 +53,13 @@ var app *cli.App
 func init() {
 	app = flags.NewApp(gitCommit, gitDate, "ethereum checkpoint helper tool")
 	app.Commands = []cli.Command{
-		commandStressTestNormal,
-		commandStressTestToken,
+		commandStressTestTransfer,
+		commandstressTestERC721Transfer,
+		commandStressTestERC721TokenMint,
+		// TODO: commandstressTestERC1155Transfer,
+		// TODO: commandStressTestERC1155TokenMint,
+		// TODO: commandDeployERC1155,
+		commandDeployERC721,
 	}
 	app.Flags = []cli.Flag{
 		nodeURLFlag,
@@ -54,13 +72,13 @@ func init() {
 var (
 	nodeURLFlag = cli.StringFlag{
 		Name:  "rpc",
-		Value: "http://localhost:8545",
+		Value: "127.16.100.101:8545, 127.16.100.102:8545, 127.16.100.103:8545, 127.16.100.104:8545",
 		Usage: "The rpc endpoint list of servial local or remote geth nodes(separator ',')",
 	}
 	privKeyFlag = cli.StringFlag{
 		Name: "privkey",
-		// 0x4Bee7F41037532509368b7B4CA8255b44Dd8Fb77
-		Value: "14b3237e4c9a9cf5c4884cd980ed17f056bd7f09bfd08c58117d36d0dbac997e",
+		// 0xf513e4e5Ded9B510780D016c482fC158209DE9AA
+		Value: "5ea30eea9ba9500f3601f7659f0ccace819c562456e2f745fb2555918ab32277",
 		Usage: "The main account used for test",
 	}
 	accountNumberFlag = cli.IntFlag{
@@ -76,17 +94,39 @@ var (
 	threadsFlag = cli.IntFlag{
 		Name:  "threads",
 		Value: 100,
-		Usage: "The go routine number for test",
-	}
-	tokenFlag = cli.StringFlag{
-		Name:  "token",
-		Value: "0x000000000000000000000000000000000000f003",
-		Usage: "The token address of test",
+		Usage: "The go routine number for test (note: threads should be lower than totalTxs)",
 	}
 	decimalFlag = cli.IntFlag{
 		Name:  "decimal",
 		Value: defaultDecimal,
 		Usage: "The decimal of token",
+	}
+	addDeveloperFlag = cli.BoolFlag{
+		Name:  "addDeveloper",
+		Usage: "Determine whether add accounts to white list or not",
+	}
+	deployFlag = cli.IntFlag{
+		Name:  "deploy",
+		Value: 20,
+		Usage: "The number of deploying contract",
+	}
+	pathFlag = cli.StringFlag{
+		Name:  "path",
+		Value: "/data/stress-test/721Tokens",
+		Usage: "The absolute path of token addresses file",
+	}
+	rrModeFlag = cli.BoolFlag{
+		Name:  "rr",
+		Usage: "Determine whether run on Round-Robin mode or not",
+	}
+	loopFlag = cli.BoolFlag{
+		Name:  "loop",
+		Usage: "Determine whether send transactions in loop",
+	}
+	txGenPeriodFlag = cli.IntFlag{
+		Name:  "period",
+		Value: 1,
+		Usage: "The period of generating transactions",
 	}
 )
 
