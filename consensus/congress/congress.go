@@ -1283,6 +1283,21 @@ func (c *Congress) ValidateTx(sender common.Address, tx *types.Transaction, head
 			return types.ErrAddressDenied
 		}
 	}
+
+	// yqq, 2022-08-21
+	// Since our tokens cannot be directly used to purchase NFT, we forbid non-B-End users to make ordinary transaction 
+	if tx.Value().Sign() > 0 {
+		if can := c.CanTransferByWhitelist(parentState, sender, header.Number); !can {
+			return types.ErrUnauthorizedTransferTx
+		}
+	}
+
+	if  tx.To() == nil && tx.Data() != nil {
+		if can := c.CanCreate(parentState, sender, header.Number); !can {
+			return types.ErrUnauthorizedCreateTx
+		}	
+	}
+
 	return nil
 }
 
@@ -1360,23 +1375,24 @@ func (c *Congress) getBlacklist(header *types.Header, parentState *state.StateDB
 
 func (c *Congress) CreateEvmExtraValidator(header *types.Header, parentState *state.StateDB) types.EvmExtraValidator {
 	// TODO(yqq): we disable blacklist at genesis block. Shall we open this ?
-	if header.Number.Cmp(common.Big1) > 0 {
-		blacks, err := c.getBlacklist(header, parentState)
-		if err != nil {
-			log.Error("getBlacklist failed", "err", err)
-			return nil
-		}
-		rules, err := c.getEventCheckRules(header, parentState)
-		if err != nil {
-			log.Error("getEventCheckRules failed", "err", err)
-			return nil
-		}
-		return &blacklistValidator{
-			blacks: blacks,
-			rules:  rules,
-		}
+	if header.Number.Cmp(common.Big1) == 1 {
+		return nil
 	}
-	return nil
+
+	blacks, err := c.getBlacklist(header, parentState)
+	if err != nil {
+		log.Error("getBlacklist failed", "err", err)
+		return nil
+	}
+	rules, err := c.getEventCheckRules(header, parentState)
+	if err != nil {
+		log.Error("getEventCheckRules failed", "err", err)
+		return nil
+	}
+	return &blacklistValidator{
+		blacks: blacks,
+		rules:  rules,
+	}
 }
 
 func (c *Congress) getEventCheckRules(header *types.Header, parentState *state.StateDB) (map[common.Hash]*EventCheckRule, error) {
