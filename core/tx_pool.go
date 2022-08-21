@@ -176,7 +176,7 @@ type TxPoolConfig struct {
 // DefaultTxPoolConfig contains the default configurations for the transaction
 // pool.
 var DefaultTxPoolConfig = TxPoolConfig{
-	NoLocals: true,  // by yqq 2022-08-11 , We disable local transactions in default 
+	NoLocals:  true, // by yqq 2022-08-11 , We disable local transactions in default
 	Journal:   "transactions.rlp",
 	Rejournal: time.Hour,
 
@@ -656,7 +656,7 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		return ErrInvalidSender
 	}
 
-	// 2022-08-11 yqq: 
+	// 2022-08-11 yqq:
 	// All tx from RPC will be regarded as remote tx in default, if --txpool.nolocals not be setted.
 	//
 	if !local && tx.GasTipCapIntCmp(pool.gasPrice) < 0 {
@@ -684,8 +684,14 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 
 	// do some extra validation if needed
 	if pool.txValidator != nil && !pool.disableExValidate {
+
+		// yqq, 2022-08-21, 
+		// to fix https://github.com/qiyichain/peculiar/issues/6 , 
+		// If AddressList.sol.devVerifyEnabled is true and enableDevVerification is true, 
+		// we forbid non-B-End account to make ordinary transaction and create contract transaction
 		err := pool.txValidator.ValidateTx(from, tx, pool.nextFakeHeader, pool.currentState)
-		if err == types.ErrAddressDenied {
+		if errors.Is(err, types.ErrAddressDenied) || errors.Is(err, types.ErrUnauthorizedCreateTx) || errors.Is(err, types.ErrUnauthorizedTransferTx){
+			log.Trace("======> txpool.validateTx", "validateTx", "===>1111$$$$$ err msg:" + err.Error())
 			return err
 		}
 		if err != nil {
