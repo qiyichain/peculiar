@@ -39,6 +39,8 @@ var (
 	ErrGasFeeCapTooLow      = errors.New("fee cap less than base fee")
 	errEmptyTypedTx         = errors.New("empty typed transaction bytes")
 	ErrAddressDenied        = errors.New("address denied")
+	ErrUnauthorizedCreateTx = errors.New("unauthorized create contract")
+	ErrUnauthorizedTransferTx = errors.New("unauthorized transfer")
 )
 
 // Transaction types.
