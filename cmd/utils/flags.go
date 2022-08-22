@@ -1728,7 +1728,7 @@ func SetupMetrics(ctx *cli.Context) {
 
 			log.Info("Enabling metrics export to InfluxDB")
 
-			go influxdb.InfluxDBWithTags(metrics.DefaultRegistry, 10*time.Second, endpoint, database, username, password, "geth.", tagsMap)
+			go influxdb.InfluxDBWithTags(metrics.DefaultRegistry, 3*time.Second, endpoint, database, username, password, "geth.", tagsMap)
 		} else if enableExportV2 {
 			tagsMap := SplitTagsFlag(ctx.GlobalString(MetricsInfluxDBTagsFlag.Name))
 

@@ -71,6 +71,9 @@ var (
 	blockExecutionTimer  = metrics.NewRegisteredTimer("chain/execution", nil)
 	blockWriteTimer      = metrics.NewRegisteredTimer("chain/write", nil)
 
+	blockTxsGauge = metrics.NewRegisteredGauge("chain/block/txs", nil)
+	//blockTxsMeter = metrics.NewRegisteredMeter("chain/block/txsMeter", nil)
+
 	blockReorgMeter         = metrics.NewRegisteredMeter("chain/reorg/executes", nil)
 	blockReorgAddMeter      = metrics.NewRegisteredMeter("chain/reorg/add", nil)
 	blockReorgDropMeter     = metrics.NewRegisteredMeter("chain/reorg/drop", nil)
@@ -442,6 +445,8 @@ func (bc *BlockChain) loadLastState() error {
 	// Everything seems to be fine, set as the head block
 	bc.currentBlock.Store(currentBlock)
 	headBlockGauge.Update(int64(currentBlock.NumberU64()))
+	blockTxsGauge.Update(int64(currentBlock.Transactions().Len()))
+	//blockTxsMeter.Mark(int64(currentBlock.Transactions().Len()))
 
 	// Restore the last known head header
 	currentHeader := currentBlock.Header()
@@ -559,6 +564,8 @@ func (bc *BlockChain) setHeadBeyondRoot(head uint64, root common.Hash, repair bo
 			// to low, so it's safe the update in-memory markers directly.
 			bc.currentBlock.Store(newHeadBlock)
 			headBlockGauge.Update(int64(newHeadBlock.NumberU64()))
+			blockTxsGauge.Update(int64(newHeadBlock.Transactions().Len()))
+			//blockTxsMeter.Mark(int64(newHeadBlock.Transactions().Len()))
 		}
 		// Rewind the fast block in a simpleton way to the target head
 		if currentFastBlock := bc.CurrentFastBlock(); currentFastBlock != nil && header.Number.Uint64() < currentFastBlock.NumberU64() {
@@ -649,6 +656,8 @@ func (bc *BlockChain) FastSyncCommitHead(hash common.Hash) error {
 	}
 	bc.currentBlock.Store(block)
 	headBlockGauge.Update(int64(block.NumberU64()))
+	blockTxsGauge.Update(int64(block.Transactions().Len()))
+	//blockTxsMeter.Mark(int64(block.Transactions().Len()))
 	bc.chainmu.Unlock()
 
 	// Destroy any existing state snapshot and regenerate it in the background,
@@ -690,6 +699,9 @@ func (bc *BlockChain) ResetWithGenesisBlock(genesis *types.Block) error {
 	bc.genesisBlock = genesis
 	bc.currentBlock.Store(bc.genesisBlock)
 	headBlockGauge.Update(int64(bc.genesisBlock.NumberU64()))
+	blockTxsGauge.Update(int64(bc.genesisBlock.Transactions().Len()))
+	//blockTxsMeter.Mark(int64(bc.genesisBlock.Transactions().Len()))
+
 	bc.hc.SetGenesis(bc.genesisBlock.Header())
 	bc.hc.SetCurrentHeader(bc.genesisBlock.Header())
 	bc.currentFastBlock.Store(bc.genesisBlock)
@@ -764,6 +776,8 @@ func (bc *BlockChain) writeHeadBlock(block *types.Block) {
 	}
 	bc.currentBlock.Store(block)
 	headBlockGauge.Update(int64(block.NumberU64()))
+	blockTxsGauge.Update(int64(block.Transactions().Len()))
+	//blockTxsMeter.Mark(int64(block.Transactions().Len()))
 }
 
 // Stop stops the blockchain service. If any imports are currently in progress
