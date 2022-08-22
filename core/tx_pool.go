@@ -656,6 +656,7 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		return ErrInvalidSender
 	}
 
+
 	// 2022-08-11 yqq:
 	// All tx from RPC will be regarded as remote tx in default, if --txpool.nolocals not be setted.
 	//
