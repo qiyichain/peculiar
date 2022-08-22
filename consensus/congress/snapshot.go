@@ -200,5 +200,13 @@ func (s *Snapshot) inturn(number uint64, validator common.Address) bool {
 	for offset < len(validators) && validators[offset] != validator {
 		offset++
 	}
+
+	// FIX(yqq): avoid "divide by 0" error, 2022-08-22
+	// NOTE: When the validators is empty, it must be a critical error in consensus.
+	// How to reproduce this error ?
+	if len(validators) == 0 {
+		return false
+	}
+
 	return (number % uint64(len(validators))) == uint64(offset)
 }
