@@ -618,6 +618,12 @@ web3._extend({
 			call: 'eth_getSysTransactionsByBlockHash',
 			params: 1
 		}),
+		new web3._extend.Method({
+			name: 'checkWhitelist',
+			call: 'eth_checkWhitelist',
+			params: 1,
+			inputFormatter: [web3._extend.formatters.inputAddressFormatter]
+		}),
 	],
 	properties: [
 		new web3._extend.Property({

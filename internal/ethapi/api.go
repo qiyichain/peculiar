@@ -856,6 +856,25 @@ func (s *PublicBlockChainAPI) getSysTransactions(block *types.Block, posa consen
 	return transactions, nil
 }
 
+// CheckWhitelist returns whether a address is in B-End whitelist or not.
+func (s *PublicBlockChainAPI) CheckWhitelist(ctx context.Context, addr common.Address) (bool, error) {
+	posa, isPoSA := s.b.Engine().(consensus.PoSA)
+	if !isPoSA {
+		return false, errors.New("not a PoSA engine")
+	}
+
+	// NOTE:  yqq, 2022-08-22
+	// get current head header of the canonical chain, 
+	// this block number doesn't equal latest block number probably.
+	curBlk := s.b.CurrentHeader()
+	st, _, err := s.b.StateAndHeaderByNumber(ctx, rpc.BlockNumber(curBlk.Number.Int64()))
+	if err != nil {
+		return false, err
+	}
+	can := posa.CanTransferByWhitelist(st, addr, curBlk.Number)
+	return can, nil
+}
+
 // GetUncleByBlockNumberAndIndex returns the uncle block for the given block hash and index. When fullTx is true
 // all transactions in the block are returned in full detail, otherwise only the transaction hash is returned.
 func (s *PublicBlockChainAPI) GetUncleByBlockNumberAndIndex(ctx context.Context, blockNr rpc.BlockNumber, index hexutil.Uint) (map[string]interface{}, error) {
