@@ -280,7 +280,7 @@ func createDeployERC1155ContractsTxs(accounts []*bind.TransactOpts, client *ethc
 	gasPrice.Mul(gasPrice, big.NewInt(params.GWei))
 
 	// fixme: use make instead of
-	addrs := make([]common.Address, 0, len(accounts))
+	addrs := make([]common.Address, len(accounts))
 	for i, account := range accounts {
 		nonce, err := client.PendingNonceAt(context.Background(), account.From)
 		if err != nil {
