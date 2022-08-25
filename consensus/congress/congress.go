@@ -1226,6 +1226,13 @@ func (c *Congress) CanCreate(state consensus.StateReader, addr common.Address, h
 		// if addr == getAdmin(state, systemcontract.AddressListContractAddr) {
 		// 	return true
 		// }
+
+		// fix issue #17, we regard validatorContractAddr 0x000000000000000000000000000000000000f000
+		// as whitelist by default. yqq-2022-08-25
+		if addr == systemcontract.ValidatorsContractAddr {
+			return true
+		}
+
 		if isDeveloperVerificationEnabled(state, systemcontract.AddressListContractAddr) {
 			slot := calcSlotOfDevMappingKey(addr)
 			valueHash := state.GetState(systemcontract.AddressListContractAddr, slot)
