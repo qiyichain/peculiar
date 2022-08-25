@@ -15,7 +15,7 @@ import (
 
 var (
 	// TODO change this on mainnet
-	validatorAdmin        = common.HexToAddress("0xf513e4e5Ded9B510780D016c482fC158209DE9AA")
+	validatorAdmin        = common.HexToAddress("0x9dEaa276B25863D5Df573fD00f364b64B72Ef0Ab")
 	validatorAdminTestnet = common.HexToAddress("0xf513e4e5Ded9B510780D016c482fC158209DE9AA")
 )
 
