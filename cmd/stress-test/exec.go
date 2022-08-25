@@ -79,6 +79,7 @@ var commandDeployERC721 = cli.Command{
 	Flags: []cli.Flag{
 		nodeURLFlag,
 		privKeyFlag,
+		addDeveloperFlag,
 		pathFlag,
 		deployFlag,
 	},
@@ -91,6 +92,7 @@ var commandDeployERC1155 = cli.Command{
 	Flags: []cli.Flag{
 		nodeURLFlag,
 		privKeyFlag,
+		addDeveloperFlag,
 		pathFlag,
 		deployFlag,
 	},
@@ -130,7 +132,7 @@ func initAccounts(accountNumber int, chainID *big.Int) ([]*bind.TransactOpts, er
 	if toGen > 0 {
 		genKeys, genAccounts, err := generateRandomAccounts(toGen, chainID)
 		if err != nil {
-			utils.Fatalf("generate accounts failed: %v", err)
+			log.Error("generate accounts failed: %v", err)
 			return nil, err
 		}
 		log.Info("generate accounts over", "generated", len(genAccounts))
@@ -161,9 +163,9 @@ func initTransfer(sender *bind.TransactOpts, receivers []*bind.TransactOpts, cli
 	return err
 }
 
-func initERC721Tokens(tokens []common.Address, owner *bind.TransactOpts, accounts []*bind.TransactOpts, client *ethclient.Client) (map[common.Address]uint64, error) {
+func initERC721Tokens(tokens []common.Address, accounts []*bind.TransactOpts, client *ethclient.Client) (map[common.Address]uint64, error) {
 	log.Info("start initERC721Tokens: sending token to test account")
-	tokenID, err := mintTokenRR(owner, tokens, accounts, client)
+	tokenID, err := mintTokenRR(tokens, accounts, client)
 	log.Info("end initERC721Tokens")
 
 	return tokenID, err
@@ -289,7 +291,7 @@ LOOP:
 			again = false
 
 		case err := <-fail:
-			utils.Fatalf("capture error: %v,  shutting down...", err)
+			log.Error("capture error: %v,  shutting down...", err)
 			break LOOP
 		}
 
@@ -359,7 +361,7 @@ func stressTestERC721Transfer(ctx *cli.Context) error {
 		}
 	}
 
-	startIDs, err := initERC721Tokens(tokens, adminAccount, accounts, client)
+	startIDs, err := initERC721Tokens(tokens, accounts, client)
 	if err != nil {
 		return err
 	}
@@ -551,6 +553,7 @@ func deployERC721Contracts(ctx *cli.Context) error {
 		client       = clients[0]
 		chainID, _   = client.ChainID(context.Background())
 		adminAccount = newAccount(ctx.GlobalString(privKeyFlag.Name), chainID)
+		addDeveloper = ctx.Bool(addDeveloperFlag.Name)
 		deploy       = ctx.Int(deployFlag.Name)
 		path         = ctx.String(pathFlag.Name)
 	)
@@ -565,14 +568,26 @@ func deployERC721Contracts(ctx *cli.Context) error {
 		return err
 	}
 
-	addrs := createDeployERC721ContractsTxs(accounts, client)
+	if addDeveloper {
+		err = addDeveloperWhiteList(adminAccount, accounts, systemcontract.AddressListContractAddr, client)
+		if err != nil {
+			return err
+		}
+	}
+
+	addrs, err := createDeployERC721ContractsTxs(accounts, client)
+	if err != nil {
+		log.Error("Deploy ERC721 token addresses failed: %v", err)
+		return err
+	}
+
 	for i := 0; i < deploy; i++ {
 		log.Info("Created ERC721 token successfully", "addr", addrs[i])
 	}
 
 	err = writeContractAddrs(path, addrs)
 	if err != nil {
-		utils.Fatalf("Write token addresses file failed: %v", err)
+		log.Error("Write token addresses file failed: %v", err)
 		return err
 	}
 	return nil
@@ -588,6 +603,7 @@ func deployERC1155Contracts(ctx *cli.Context) error {
 		client       = clients[0]
 		chainID, _   = client.ChainID(context.Background())
 		adminAccount = newAccount(ctx.GlobalString(privKeyFlag.Name), chainID)
+		addDeveloper = ctx.Bool(addDeveloperFlag.Name)
 		deploy       = ctx.Int(deployFlag.Name)
 		path         = ctx.String(pathFlag.Name)
 	)
@@ -602,7 +618,19 @@ func deployERC1155Contracts(ctx *cli.Context) error {
 		return err
 	}
 
-	addrs := createDeployERC1155ContractsTxs(accounts, client)
+	if addDeveloper {
+		err = addDeveloperWhiteList(adminAccount, accounts, systemcontract.AddressListContractAddr, client)
+		if err != nil {
+			return err
+		}
+	}
+
+	addrs, err := createDeployERC1155ContractsTxs(accounts, client)
+	if err != nil {
+		log.Error("Deploy ERC1155 token addresses failed: %v", err)
+		return err
+	}
+
 	for i := 0; i < len(addrs); i++ {
 		log.Info("Created ERC1155 token successfully", "addr", addrs[i])
 	}

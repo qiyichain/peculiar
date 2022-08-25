@@ -101,7 +101,7 @@ func loadContractAddrs(path string) ([]common.Address, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			utils.Fatalf("Please use deploy721 or deply1155 commands to deploy contracts on chain first")
+			utils.Fatalf("Please use deploy721 or deploy1155 commands to deploy contracts on chain first")
 		}
 		return nil, err
 	}

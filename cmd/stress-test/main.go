@@ -21,7 +21,6 @@ var (
 var (
 	receiver                = common.HexToAddress("0xf513e4e5Ded9B510780D016c482fC158209DE9AA")
 	AddressListContractAddr = common.HexToAddress("0x000000000000000000000000000000000000F003")
-	ERC721OwnerAddr         = common.HexToAddress("0xf513e4e5Ded9B510780D016c482fC158209DE9AA")
 
 	// gasLimit
 	ethTransferLimit          = uint64(21000)
@@ -76,7 +75,7 @@ func init() {
 var (
 	nodeURLFlag = cli.StringFlag{
 		Name:  "rpc",
-		Value: "127.16.100.101:8545, 127.16.100.102:8545, 127.16.100.103:8545, 127.16.100.104:8545",
+		Value: "http://172.16.100.101:8545, http://172.16.100.102:8545, http://172.16.100.103:8545, http://172.16.100.104:8545",
 		Usage: "The rpc endpoint list of servial local or remote geth nodes(separator ',')",
 	}
 	privKeyFlag = cli.StringFlag{
