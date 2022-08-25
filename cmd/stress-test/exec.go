@@ -85,6 +85,18 @@ var commandDeployERC721 = cli.Command{
 	Action: utils.MigrateFlags(deployERC721Contracts),
 }
 
+var commandDeployERC1155 = cli.Command{
+	Name:  "deploy1155",
+	Usage: "Deploy ERC1155 contract for test",
+	Flags: []cli.Flag{
+		nodeURLFlag,
+		privKeyFlag,
+		pathFlag,
+		deployFlag,
+	},
+	Action: utils.MigrateFlags(deployERC1155Contracts),
+}
+
 func initEthClients(ctx *cli.Context) ([]*ethclient.Client, error) {
 	clients := newClients(getRPCList(ctx))
 	if len(clients) == 0 {
@@ -561,6 +573,43 @@ func deployERC721Contracts(ctx *cli.Context) error {
 	err = writeContractAddrs(path, addrs)
 	if err != nil {
 		utils.Fatalf("Write token addresses file failed: %v", err)
+		return err
+	}
+	return nil
+}
+
+func deployERC1155Contracts(ctx *cli.Context) error {
+	clients, err := initEthClients(ctx)
+	if err != nil {
+		return err
+	}
+
+	var (
+		client       = clients[0]
+		chainID, _   = client.ChainID(context.Background())
+		adminAccount = newAccount(ctx.GlobalString(privKeyFlag.Name), chainID)
+		deploy       = ctx.Int(deployFlag.Name)
+		path         = ctx.String(pathFlag.Name)
+	)
+
+	accounts, err := initAccounts(deploy, chainID)
+	if err != nil {
+		return err
+	}
+
+	err = initTransfer(adminAccount, accounts, client)
+	if err != nil {
+		return err
+	}
+
+	addrs := createDeployERC1155ContractsTxs(accounts, client)
+	for i := 0; i < len(addrs); i++ {
+		log.Info("Created ERC1155 token successfully", "addr", addrs[i])
+	}
+
+	err = writeContractAddrs(path, addrs)
+	if err != nil {
+		log.Error("Write ERC1155 token addresses failed: %v", err)
 		return err
 	}
 	return nil

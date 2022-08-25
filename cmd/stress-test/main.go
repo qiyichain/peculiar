@@ -24,12 +24,15 @@ var (
 	ERC721OwnerAddr         = common.HexToAddress("0xf513e4e5Ded9B510780D016c482fC158209DE9AA")
 
 	// gasLimit
-	ethTransferLimit         = uint64(21000)
-	tokenTransferLimit       = uint64(100000)
-	addDeveloperLimit        = uint64(100000)
-	deployERC721Limit        = uint64(4000000)
-	ERC721MintLimit          = uint64(150000)
-	ERC721TransferTokenLimit = uint64(100000)
+	ethTransferLimit          = uint64(21000)
+	tokenTransferLimit        = uint64(100000)
+	addDeveloperLimit         = uint64(100000)
+	deployERC721Limit         = uint64(4000000)
+	ERC721MintLimit           = uint64(150000)
+	ERC721TransferTokenLimit  = uint64(100000)
+	deployERC1155Limit        = uint64(8000000) // todo: need to change
+	ERC1155MintLimit          = uint64(150000)  // todo: need to change
+	ERC1155TransferTokenLimit = uint64(100000)  // todo: need to change
 
 	// sig
 	tokenTransferSig   = "a9059cbb"
@@ -56,10 +59,11 @@ func init() {
 		commandStressTestTransfer,
 		commandstressTestERC721Transfer,
 		commandStressTestERC721TokenMint,
+		commandDeployERC721,
+		commandDeployERC1155,
 		// TODO: commandstressTestERC1155Transfer,
 		// TODO: commandStressTestERC1155TokenMint,
 		// TODO: commandDeployERC1155,
-		commandDeployERC721,
 	}
 	app.Flags = []cli.Flag{
 		nodeURLFlag,

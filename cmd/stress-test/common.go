@@ -275,6 +275,37 @@ func deployERC721(adminAccount *bind.TransactOpts, client *ethclient.Client) com
 	return contractAddr
 }
 
+func createDeployERC1155ContractsTxs(accounts []*bind.TransactOpts, client *ethclient.Client) []common.Address {
+	gasPrice := big.NewInt(10)
+	gasPrice.Mul(gasPrice, big.NewInt(params.GWei))
+
+	// fixme: use make instead of
+	addrs := make([]common.Address, 0, len(accounts))
+	for i, account := range accounts {
+		nonce, err := client.PendingNonceAt(context.Background(), account.From)
+		if err != nil {
+			log.Error("Failed to fetch account nonce %v", err)
+		}
+
+		account.GasPrice = gasPrice
+		account.GasLimit = deployERC1155Limit
+		account.Value = new(big.Int)
+		account.Nonce = big.NewInt(int64(nonce))
+
+		addrs[i] = deployERC1155(account, client)
+	}
+
+	return addrs
+}
+
+func deployERC1155(adminAccount *bind.TransactOpts, client *ethclient.Client) common.Address {
+	contractAddr, _, _, err := DeployERC1155(adminAccount, client)
+	if err != nil {
+		log.Error("Failed to deploy ERC1155 contract: %v", err)
+	}
+	return contractAddr
+}
+
 func sendBatchTxs(txs []*types.Transaction, client *ethclient.Client) {
 	var lastHash common.Hash
 	for _, tx := range txs {
