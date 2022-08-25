@@ -148,7 +148,7 @@ func initAccounts(accountNumber int, chainID *big.Int) ([]*bind.TransactOpts, er
 	if toGen > 0 {
 		genKeys, genAccounts, err := generateRandomAccounts(toGen, chainID)
 		if err != nil {
-			log.Error("generate accounts failed: %v", err)
+			log.Error("generate accounts failed", "err", err)
 			return nil, err
 		}
 		log.Info("generate accounts over", "generated", len(genAccounts))
@@ -213,8 +213,8 @@ func stressTestTransfer(ctx *cli.Context) error {
 		return errors.New("threads amount should lower than total tx amount")
 	}
 
-	if total < accountNumber {
-		return errors.New("total tx amount should bigger than account amount")
+	if total < accountNumber || total%accountNumber != 0 {
+		return errors.New("total tx amount should be a multiple of account amount")
 	}
 
 	accounts, err := initAccounts(accountNumber, chainID)
@@ -307,7 +307,7 @@ LOOP:
 			again = false
 
 		case err := <-fail:
-			log.Error("capture error: %v,  shutting down...", err)
+			log.Error("capture error while doing task,  shutting down...", "err", err)
 			break LOOP
 		}
 
@@ -356,8 +356,8 @@ func stressTestERC721Transfer(ctx *cli.Context) error {
 		return errors.New("threads amount should lower than total tx amount")
 	}
 
-	if total < accountNumber {
-		return errors.New("total tx amount should bigger than account amount")
+	if total < accountNumber || total%accountNumber != 0 {
+		return errors.New("total tx amount should be a multiple of account amount")
 	}
 
 	accounts, err := initAccounts(accountNumber, chainID)
@@ -398,7 +398,7 @@ LOOP:
 		if done == nil && again {
 			done = make(chan struct{})
 
-			txs, err := generateSignedTokenTransactions(total, tokens, accounts, startIDs, client)
+			txs, err := generateSignedERC721TransferTransactions(total, tokens, accounts, startIDs, client)
 
 			if err != nil {
 				log.Error("generate signed ERC721 token transfer txs falied", "err", err)
@@ -439,7 +439,7 @@ LOOP:
 			again = false
 
 		case <-fail:
-			log.Error("capture error while doing task, shutting down...")
+			log.Error("capture error while doing task, shutting down...", "err", err)
 			break LOOP
 		}
 	}
@@ -478,11 +478,15 @@ func stressTestERC721Mint(ctx *cli.Context) error {
 	)
 
 	if threads > total || threads > len(tokens) {
-		return errors.New("threads amount should lower than total tx amount and token kinds")
+		return errors.New("threads amount should lower than total tx amount and total token class")
 	}
 
 	if total < accountNumber {
 		return errors.New("total tx amount should bigger than account amount")
+	}
+
+	if total%len(tokens) != 0 {
+		return errors.New("total tx amount should be a multiple of total token class")
 	}
 
 	accounts, err := initAccounts(accountNumber, chainID)
@@ -551,7 +555,7 @@ LOOP:
 			again = false
 
 		case <-fail:
-			log.Error("capture error while doing task, shutting down...")
+			log.Error("capture error while doing task, shutting down...", "err", err)
 			break LOOP
 		}
 	}
@@ -593,7 +597,7 @@ func deployERC721Contracts(ctx *cli.Context) error {
 
 	addrs, err := createDeployERC721ContractsTxs(accounts, client)
 	if err != nil {
-		log.Error("Deploy ERC721 token addresses failed: %v", err)
+		log.Error("Deploy ERC721 token addresses failed", "err", err)
 		return err
 	}
 
@@ -603,7 +607,7 @@ func deployERC721Contracts(ctx *cli.Context) error {
 
 	err = writeContractAddrs(path, addrs)
 	if err != nil {
-		log.Error("Write token addresses file failed: %v", err)
+		log.Error("Write token addresses file failed", "err", err)
 		return err
 	}
 	return nil
@@ -643,7 +647,7 @@ func deployERC1155Contracts(ctx *cli.Context) error {
 
 	addrs, err := createDeployERC1155ContractsTxs(accounts, client)
 	if err != nil {
-		log.Error("Deploy ERC1155 token addresses failed: %v", err)
+		log.Error("Deploy ERC1155 token addresses failed", "err", err)
 		return err
 	}
 
@@ -653,7 +657,7 @@ func deployERC1155Contracts(ctx *cli.Context) error {
 
 	err = writeContractAddrs(path, addrs)
 	if err != nil {
-		log.Error("Write ERC1155 token addresses failed: %v", err)
+		log.Error("Write ERC1155 token addresses failed", "err", err)
 		return err
 	}
 	return nil
