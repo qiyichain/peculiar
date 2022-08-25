@@ -395,6 +395,71 @@ func mintERC721Tokens(total int, tokens []common.Address, accounts []*bind.Trans
 	return txs, nil
 }
 
+func packMint1155TokenData(to common.Address) []byte {
+	// todo: length
+	data := make([]byte, 900)
+
+	sig, _ := hex.DecodeString(ERC1155MintSig)
+	copy(data[:4], sig[:])
+
+	toBytes := to.Bytes()
+	copy(data[36-len(toBytes):36], toBytes[:])
+
+	erc1155MintBytes, _ := hex.DecodeString(erc1155MintString)
+	copy(data[36:], erc1155MintBytes)
+
+	return data
+}
+
+func newMintERC1155TokenTx(nonce uint64, to common.Address, token common.Address) *types.Transaction {
+	gasPrice := big.NewInt(10)
+	gasPrice.Mul(gasPrice, big.NewInt(params.GWei))
+	return types.NewTransaction(nonce, token, new(big.Int), ERC1155MintLimit, gasPrice, packMint1155TokenData(to))
+}
+
+func mintERC1155Tokens(total int, tokens []common.Address, accounts []*bind.TransactOpts,
+	client *ethclient.Client) ([]*types.Transaction, error) {
+	// init
+	txs := make([]*types.Transaction, 0)
+	tokensLen, accountsLen := len(tokens), len(accounts)
+	jobsPerThreadTmp := total / tokensLen
+
+	workFn := func(start, end int, data ...interface{}) ([]interface{}, error) {
+		account := accounts[start%accountsLen]
+		owner := accounts[start/jobsPerThreadTmp]
+		token := tokens[start/jobsPerThreadTmp]
+		result := make([]interface{}, 0)
+
+		nonce, err := client.PendingNonceAt(context.Background(), owner.From)
+		if err != nil {
+			return nil, err
+		}
+
+		for i := start; i < end; i++ {
+			signedTx, err := owner.Signer(owner.From, newMintERC1155TokenTx(nonce, account.From, token))
+			if err != nil {
+				log.Error("Failed to sign tx", "from", account.From, "to", token, "nonce", nonce, "error", err)
+				return nil, err
+			}
+			result = append(result, signedTx)
+			nonce++
+		}
+		return result, nil
+	}
+
+	result := concurrentWork(tokensLen, total, workFn, nil)
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	for _, tx := range result {
+		tmp := tx.(*types.Transaction)
+		txs = append(txs, tmp)
+	}
+
+	return txs, nil
+}
+
 func mintTokenRR(tokens []common.Address, accounts []*bind.TransactOpts, client *ethclient.Client) (map[common.Address]uint64, error) {
 	var lastHash common.Hash
 	tokenID := make(map[common.Address]uint64, len(tokens))

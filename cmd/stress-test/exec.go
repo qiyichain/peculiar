@@ -99,6 +99,22 @@ var commandDeployERC1155 = cli.Command{
 	Action: utils.MigrateFlags(deployERC1155Contracts),
 }
 
+var commandStressTestERC1155TokenMint = cli.Command{
+	Name:  "stressTestERC1155Mint",
+	Usage: "Mint ERC1155 contract for stress test",
+	Flags: []cli.Flag{
+		nodeURLFlag,
+		privKeyFlag,
+		accountNumberFlag,
+		totalTxsFlag,
+		threadsFlag,
+		pathFlag,
+		loopFlag,
+		txGenPeriodFlag,
+	},
+	Action: utils.MigrateFlags(stressTestERC1155BatchMint),
+}
+
 func initEthClients(ctx *cli.Context) ([]*ethclient.Client, error) {
 	clients := newClients(getRPCList(ctx))
 	if len(clients) == 0 {
@@ -640,5 +656,116 @@ func deployERC1155Contracts(ctx *cli.Context) error {
 		log.Error("Write ERC1155 token addresses failed: %v", err)
 		return err
 	}
+	return nil
+}
+
+func stressTestERC1155BatchMint(ctx *cli.Context) error {
+	path := ctx.String(pathFlag.Name)
+	tokens, err := loadContractAddrs(path)
+	if err != nil {
+		return err
+	}
+
+	if len(tokens) == 0 {
+		return errors.New("no erc1155 token addresses exist")
+	}
+
+	clients, err := initEthClients(ctx)
+	if err != nil {
+		return err
+	}
+
+	var (
+		client        = clients[0]
+		chainId, _    = client.ChainID(context.Background())
+		adminAccount  = newAccount(ctx.GlobalString(privKeyFlag.Name), chainId)
+		accountNumber = ctx.Int(accountNumberFlag.Name)
+		total         = ctx.Int(totalTxsFlag.Name)
+		threads       = ctx.Int(threadsFlag.Name)
+		loop          = ctx.Bool(loopFlag.Name)
+		intv          = ctx.Int(txGenPeriodFlag.Name)
+		done          chan struct{}
+		fail          = make(chan error, 1)
+		again         = true
+	)
+
+	if threads > total || threads > len(tokens) {
+		return errors.New("threads amount should be lower than total txs and token kinds")
+	}
+
+	if total < accountNumber {
+		return errors.New("total tx amount should bigger than account amount")
+	}
+
+	accounts, err := initAccounts(accountNumber, chainId)
+	if err != nil {
+		return err
+	}
+
+	err = initTransfer(adminAccount, accounts, client)
+	if err != nil {
+		return err
+	}
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	timer := time.NewTimer(time.Duration(intv) * time.Second)
+	defer timer.Stop()
+
+	if !loop {
+		go func() {
+			sigs <- syscall.SIGTERM
+		}()
+	}
+
+LOOP:
+	for {
+		if done == nil && again {
+			done = make(chan struct{})
+
+			// generate erc1155 mint tx
+			txs, err := mintERC1155Tokens(total, tokens, accounts, client)
+			if err != nil {
+				log.Error("generate signed ERC1155 token mint txs failed", "err", err)
+				fail <- err
+				continue
+			}
+			log.Info("generated signed ERC1155 token mint txs success", "total", len(txs))
+
+			currentBlock, _ := client.BlockByNumber(context.Background(), nil)
+			log.Info("current block", "number", currentBlock.Number())
+
+			start := time.Now()
+			err = stressSendTransactions(txs, threads, clients)
+			if err != nil {
+				log.Error("send ERC1155 token mint txs failed", "err", err)
+				fail <- err
+				continue
+			}
+			log.Info("send ERC1155 token mint txs success", "cost(milliseconds)", time.Since(start), "total", len(txs))
+
+			close(done)
+		}
+
+		select {
+		case <-done:
+			done = nil
+			again = false
+
+		case <-timer.C:
+			again = true
+
+		case <-fail:
+			log.Error("capture error while doing task, shutting down...")
+			break LOOP
+
+		case <-sigs:
+			log.Info("capture interrupt, shutting down...")
+			break LOOP
+
+		}
+	}
+
 	return nil
 }
