@@ -15,7 +15,7 @@ import (
 
 var (
 	// TODO yqq 2022-08-07: change admin address on mainnet
-	govAdmin        = common.HexToAddress("0xf513e4e5Ded9B510780D016c482fC158209DE9AA")
+	govAdmin        = common.HexToAddress("0x9dEaa276B25863D5Df573fD00f364b64B72Ef0Ab")
 	govAdminTestnet = common.HexToAddress("0xf513e4e5Ded9B510780D016c482fC158209DE9AA")
 )
 
