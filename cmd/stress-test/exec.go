@@ -100,7 +100,7 @@ var commandDeployERC1155 = cli.Command{
 }
 
 var commandStressTestERC1155TokenMint = cli.Command{
-	Name:  "stressTestERC1155Mint",
+	Name:  "testERC1155Mint",
 	Usage: "Mint ERC1155 contract for stress test",
 	Flags: []cli.Flag{
 		nodeURLFlag,
@@ -714,7 +714,7 @@ func stressTestERC1155BatchMint(ctx *cli.Context) error {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	timer := time.NewTimer(time.Duration(intv) * time.Second)
+	timer := time.NewTicker(time.Duration(intv) * time.Second)
 	defer timer.Stop()
 
 	if !loop {
@@ -767,7 +767,6 @@ LOOP:
 		case <-sigs:
 			log.Info("capture interrupt, shutting down...")
 			break LOOP
-
 		}
 	}
 
