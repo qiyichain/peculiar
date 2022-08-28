@@ -225,7 +225,7 @@ func addDeveloperWhiteList(adminAccount *bind.TransactOpts, accounts []*bind.Tra
 	for _, account := range accounts {
 		signedTx, _ := adminAccount.Signer(adminAccount.From, newAddDeveloperWhiteListTx(nonce, to, account.From))
 		if err := client.SendTransaction(context.Background(), signedTx); err != nil {
-			log.Error("Failed to add devloper into whitelist", "err", err)
+			log.Error("Failed to add developer into whitelist", "err", err)
 			return err
 		}
 
@@ -397,8 +397,7 @@ func mintERC721Tokens(total int, tokens []common.Address, accounts []*bind.Trans
 }
 
 func packMint1155TokenData(to common.Address) []byte {
-	// todo: length
-	data := make([]byte, 900)
+	data := make([]byte, 516)
 
 	sig, _ := hex.DecodeString(ERC1155MintSig)
 	copy(data[:4], sig[:])
@@ -458,6 +457,100 @@ func mintERC1155Tokens(total int, tokens []common.Address, accounts []*bind.Tran
 		txs = append(txs, tmp)
 	}
 
+	return txs, nil
+}
+
+func mint1155TokenRR(tokens []common.Address, accounts []*bind.TransactOpts, client *ethclient.Client) error {
+	var lastHash common.Hash
+	for i, token := range tokens {
+		owner := accounts[i].From
+		nonce, err := client.PendingNonceAt(context.Background(), owner)
+		if err != nil {
+			return err
+		}
+
+		for _, account := range accounts {
+			signedTx, err := accounts[i].Signer(owner, newMintERC1155TokenTx(nonce, account.From, token))
+			if err != nil {
+				log.Error("Failed to sign transaction:", "From", account.From, "Error", err)
+				return err
+			}
+			// send
+			if err = client.SendTransaction(context.Background(), signedTx); err != nil {
+				log.Error("Failed to send preMint token to random account", "err", err)
+				return err
+			}
+			lastHash = signedTx.Hash()
+			nonce++
+		}
+	}
+	waitForTx(lastHash, client)
+	return nil
+}
+
+func pack1155TokenTransferFromData(from, to common.Address) []byte {
+	data := make([]byte, 548)
+
+	// sig: safeBatchTransferFrom
+	sig, _ := hex.DecodeString(ERC1155TransferSig)
+	copy(data[:4], sig)
+
+	// copy first para: 'from'
+	fromBytes := from.Bytes()
+	copy(data[36-len(fromBytes):36], fromBytes)
+	// copy second para: 'to'
+	toBytes := to.Bytes()
+	copy(data[68-len(fromBytes):68], toBytes)
+
+	// copy left
+	erc1155TransferBytes, _ := hex.DecodeString(erc1155BatchTransferFrom)
+	copy(data[68:], erc1155TransferBytes)
+
+	return data
+}
+
+func generateTransfer1155TokenTx(nonce uint64, token common.Address, account common.Address) *types.Transaction {
+	gasPrice := big.NewInt(10)
+	gasPrice.Mul(gasPrice, big.NewInt(params.GWei))
+
+	return types.NewTransaction(nonce, token, new(big.Int), ERC1155TransferTokenLimit, gasPrice, pack1155TokenTransferFromData(account, account))
+}
+
+func generateSignedERC1155TransferTransactions(total int, tokens []common.Address, accounts []*bind.TransactOpts, client *ethclient.Client) ([]*types.Transaction, error) {
+	txs := make([]*types.Transaction, 0)
+	tokensLen, jobsPerThreadTmp := len(tokens), total/len(accounts)
+
+	workFn := func(start, end int, data ...interface{}) ([]interface{}, error) {
+		id := uint64(start / jobsPerThreadTmp)
+		account := accounts[id]
+		nonce, err := client.PendingNonceAt(context.Background(), account.From)
+		if err != nil {
+			log.Error("Failed to get account nonce: %v", "err", err)
+			return nil, err
+		}
+
+		result := make([]interface{}, 0)
+		for i := 0; i < end-start; i++ {
+			tokenID := i % tokensLen
+			token := tokens[tokenID]
+			signedTx, err := account.Signer(account.From, generateTransfer1155TokenTx(nonce, token, account.From))
+			if err != nil {
+				log.Error("Failed to generate 2255 batch transfer transaction: %v", "account", account.From, "err", err)
+				return nil, err
+			}
+			result = append(result, signedTx)
+			nonce++
+		}
+		return result, nil
+	}
+	result := concurrentWork(len(accounts), total, workFn, nil)
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	for _, tx := range result {
+		txs = append(txs, tx.(*types.Transaction))
+	}
 	return txs, nil
 }
 
