@@ -5,7 +5,6 @@ import (
 	"crypto/ecdsa"
 	"encoding/binary"
 	"encoding/hex"
-	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -14,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -116,7 +116,7 @@ func generateRandomAccounts(amount int, chainID *big.Int) ([]*ecdsa.PrivateKey, 
 		for i := start; i < end; i++ {
 			key, err := crypto.GenerateKey()
 			if err != nil {
-				utils.Fatalf("Generate keys failed: %v", err)
+				log.Error("Generate keys failed", "err", err)
 				return nil, err
 			}
 
@@ -143,7 +143,7 @@ func generateRandomAccounts(amount int, chainID *big.Int) ([]*ecdsa.PrivateKey, 
 func sendEtherToRandomAccount(adminAccount *bind.TransactOpts, accounts []*bind.TransactOpts, amount *big.Int, client *ethclient.Client) error {
 	nonce, err := client.PendingNonceAt(context.Background(), adminAccount.From)
 	if err != nil {
-		utils.Fatalf("Failed to get account nonce: %v", err)
+		log.Error("Failed to get account nonce", "err", err)
 		return err
 	}
 
@@ -156,7 +156,7 @@ func sendEtherToRandomAccount(adminAccount *bind.TransactOpts, accounts []*bind.
 			return err
 		}
 		if err := client.SendTransaction(context.Background(), signedTx); err != nil {
-			utils.Fatalf("Failed to send ether to random account: %v", err)
+			log.Error("Failed to send ether to random account", "err", err)
 			return err
 		}
 
@@ -174,13 +174,6 @@ func newHBStansferTransaction(nonce uint64, to common.Address, amount *big.Int) 
 	gasPrice.Mul(gasPrice, big.NewInt(params.GWei))
 
 	return types.NewTransaction(nonce, to, amount, ethTransferLimit, gasPrice, []byte{})
-}
-
-func newTokenTransferTransaction(nonce uint64, token, to common.Address, amount *big.Int) *types.Transaction {
-	gasPrice := big.NewInt(10)
-	gasPrice.Mul(gasPrice, big.NewInt(params.GWei))
-
-	return types.NewTransaction(nonce, token, new(big.Int), tokenTransferLimit, gasPrice, packTransferTokenData(to, amount))
 }
 
 func generateTransferTx(nonce uint64, to common.Address, amount *big.Int) *types.Transaction {
@@ -224,7 +217,7 @@ func newAddDeveloperWhiteListTx(nonce uint64, to common.Address, account common.
 func addDeveloperWhiteList(adminAccount *bind.TransactOpts, accounts []*bind.TransactOpts, to common.Address, client *ethclient.Client) error {
 	nonce, err := client.PendingNonceAt(context.Background(), adminAccount.From)
 	if err != nil {
-		utils.Fatalf("Failed to get account nonce: %v", err)
+		log.Error("Failed to get account nonce:", "err", err)
 		return err
 	}
 
@@ -232,7 +225,7 @@ func addDeveloperWhiteList(adminAccount *bind.TransactOpts, accounts []*bind.Tra
 	for _, account := range accounts {
 		signedTx, _ := adminAccount.Signer(adminAccount.From, newAddDeveloperWhiteListTx(nonce, to, account.From))
 		if err := client.SendTransaction(context.Background(), signedTx); err != nil {
-			utils.Fatalf("Failed to add devloper into whitelist: %v", err)
+			log.Error("Failed to add developer into whitelist", "err", err)
 			return err
 		}
 
@@ -244,7 +237,7 @@ func addDeveloperWhiteList(adminAccount *bind.TransactOpts, accounts []*bind.Tra
 	return nil
 }
 
-func createDeployERC721ContractsTxs(accounts []*bind.TransactOpts, client *ethclient.Client) []common.Address {
+func createDeployERC721ContractsTxs(accounts []*bind.TransactOpts, client *ethclient.Client) ([]common.Address, error) {
 	gasPrice := big.NewInt(10)
 	gasPrice.Mul(gasPrice, big.NewInt(params.GWei))
 
@@ -252,7 +245,8 @@ func createDeployERC721ContractsTxs(accounts []*bind.TransactOpts, client *ethcl
 	for i, account := range accounts {
 		nonce, err := client.PendingNonceAt(context.Background(), account.From)
 		if err != nil {
-			utils.Fatalf("Failed to get account nonce: %v", err)
+			log.Error("Failed to get account nonce", "err", err)
+			return nil, err
 		}
 
 		account.GasPrice = gasPrice
@@ -260,47 +254,78 @@ func createDeployERC721ContractsTxs(accounts []*bind.TransactOpts, client *ethcl
 		account.Value = new(big.Int)
 
 		account.Nonce = big.NewInt(int64(nonce))
-		addrs[i] = deployERC721(account, client)
+		addrs[i], err = deployERC721(account, client)
+
+		if err != nil {
+			log.Error("Failed to deploy ERC721 token contract", "err", err)
+			return nil, err
+		}
 	}
 
-	return addrs
+	return addrs, nil
 }
 
-func deployERC721(adminAccount *bind.TransactOpts, client *ethclient.Client) common.Address {
+func deployERC721(adminAccount *bind.TransactOpts, client *ethclient.Client) (common.Address, error) {
 	contractAddr, _, _, err := DeployERC721(adminAccount, client)
 	if err != nil {
-		utils.Fatalf("Failed to deploy ERC721 contract: %v", err)
+		log.Error("Failed to deploy ERC721 contract", "err", err)
+		return common.Address{}, err
 	}
 
-	return contractAddr
+	return contractAddr, nil
 }
 
-func sendBatchTxs(txs []*types.Transaction, client *ethclient.Client) {
-	var lastHash common.Hash
-	for _, tx := range txs {
-		fmt.Println(tx)
-		if err := client.SendTransaction(context.Background(), tx); err != nil {
-			utils.Fatalf("Failed to send tx: %v", err)
+func createDeployERC1155ContractsTxs(accounts []*bind.TransactOpts, client *ethclient.Client) ([]common.Address, error) {
+	gasPrice := big.NewInt(10)
+	gasPrice.Mul(gasPrice, big.NewInt(params.GWei))
+
+	// fixme: use make instead of
+	addrs := make([]common.Address, len(accounts))
+	for i, account := range accounts {
+		nonce, err := client.PendingNonceAt(context.Background(), account.From)
+		if err != nil {
+			log.Error("Failed to fetch account nonce", "err", err)
+			return nil, err
 		}
-		lastHash = tx.Hash()
+
+		account.GasPrice = gasPrice
+		account.GasLimit = deployERC1155Limit
+		account.Value = new(big.Int)
+		account.Nonce = big.NewInt(int64(nonce))
+
+		addrs[i], err = deployERC1155(account, client)
+
+		if err != nil {
+			log.Error("Failed to deploy ERC721 token contract", "err", err)
+			return nil, err
+		}
 	}
 
-	waitForTx(lastHash, client)
+	return addrs, nil
 }
 
-func getTokenCurrentID(token common.Address, client *ethclient.Client) (uint64, error) {
+func deployERC1155(adminAccount *bind.TransactOpts, client *ethclient.Client) (common.Address, error) {
+	contractAddr, _, _, err := DeployERC1155(adminAccount, client)
+	if err != nil {
+		log.Error("Failed to deploy ERC1155 contract", "err", err)
+		return common.Address{}, err
+	}
+	return contractAddr, nil
+}
+
+func getTokenCurrentID(token, owner common.Address, client *ethclient.Client) (uint64, error) {
 	currentBlock, _ := client.BlockByNumber(context.Background(), nil)
 	data, _ := hex.DecodeString(ERC721CurrentIDSig)
 
 	msg := ethereum.CallMsg{
-		From: ERC721OwnerAddr,
+		From: owner,
 		To:   &token,
 		Data: data,
 	}
 
 	ret, err := client.CallContract(context.Background(), msg, currentBlock.Number())
 	if err != nil {
-		utils.Fatalf("Get ERCToken current ID Failed: %v", err)
+		log.Error("Get ERCToken current ID Failed", "err", err)
 		return 0, err
 	}
 	return binary.BigEndian.Uint64(ret[len(ret)-8:]), nil
@@ -335,12 +360,13 @@ func mintERC721Tokens(total int, tokens []common.Address, accounts []*bind.Trans
 	workFn := func(start, end int, data ...interface{}) ([]interface{}, error) {
 		account := accounts[start%accountsLen]
 		owner := accounts[start/jobsPerThreadTmp]
-		token := tokens[start/tokensLen]
+		token := tokens[start/jobsPerThreadTmp]
 		result := make([]interface{}, 0)
 
 		nonce, err := client.PendingNonceAt(context.Background(), owner.From)
 		if err != nil {
-			utils.Fatalf("Failed to get account nonce: %v", err)
+			log.Error("Failed to get account nonce", "err", err)
+			return nil, err
 		}
 
 		for i := start; i < end; i++ {
@@ -370,29 +396,190 @@ func mintERC721Tokens(total int, tokens []common.Address, accounts []*bind.Trans
 	return txs, nil
 }
 
-func mintTokenRR(owner *bind.TransactOpts, tokens []common.Address, accounts []*bind.TransactOpts, client *ethclient.Client) (map[common.Address]uint64, error) {
-	nonce, err := client.PendingNonceAt(context.Background(), ERC721OwnerAddr)
-	if err != nil {
-		utils.Fatalf("Failed to get account nonce: %v", err)
+func packMint1155TokenData(to common.Address) []byte {
+	data := make([]byte, 516)
+
+	sig, _ := hex.DecodeString(ERC1155MintSig)
+	copy(data[:4], sig[:])
+
+	toBytes := to.Bytes()
+	copy(data[36-len(toBytes):36], toBytes[:])
+
+	erc1155MintBytes, _ := hex.DecodeString(erc1155MintString)
+	copy(data[36:], erc1155MintBytes)
+
+	return data
+}
+
+func newMintERC1155TokenTx(nonce uint64, to common.Address, token common.Address) *types.Transaction {
+	gasPrice := big.NewInt(10)
+	gasPrice.Mul(gasPrice, big.NewInt(params.GWei))
+	return types.NewTransaction(nonce, token, new(big.Int), ERC1155MintLimit, gasPrice, packMint1155TokenData(to))
+}
+
+func mintERC1155Tokens(total int, tokens []common.Address, accounts []*bind.TransactOpts,
+	client *ethclient.Client) ([]*types.Transaction, error) {
+	// init
+	txs := make([]*types.Transaction, 0)
+	tokensLen, accountsLen := len(tokens), len(accounts)
+	jobsPerThreadTmp := total / tokensLen
+
+	workFn := func(start, end int, data ...interface{}) ([]interface{}, error) {
+		account := accounts[start%accountsLen]
+		owner := accounts[start/jobsPerThreadTmp]
+		token := tokens[start/jobsPerThreadTmp]
+		result := make([]interface{}, 0)
+
+		nonce, err := client.PendingNonceAt(context.Background(), owner.From)
+		if err != nil {
+			return nil, err
+		}
+
+		for i := start; i < end; i++ {
+			signedTx, err := owner.Signer(owner.From, newMintERC1155TokenTx(nonce, account.From, token))
+			if err != nil {
+				log.Error("Failed to sign tx", "from", account.From, "to", token, "nonce", nonce, "error", err)
+				return nil, err
+			}
+			result = append(result, signedTx)
+			nonce++
+		}
+		return result, nil
 	}
 
+	result := concurrentWork(tokensLen, total, workFn, nil)
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	for _, tx := range result {
+		tmp := tx.(*types.Transaction)
+		txs = append(txs, tmp)
+	}
+
+	return txs, nil
+}
+
+func mint1155TokenRR(tokens []common.Address, accounts []*bind.TransactOpts, client *ethclient.Client) error {
+	var lastHash common.Hash
+	for i, token := range tokens {
+		owner := accounts[i].From
+		nonce, err := client.PendingNonceAt(context.Background(), owner)
+		if err != nil {
+			return err
+		}
+
+		for _, account := range accounts {
+			signedTx, err := accounts[i].Signer(owner, newMintERC1155TokenTx(nonce, account.From, token))
+			if err != nil {
+				log.Error("Failed to sign transaction:", "From", account.From, "Error", err)
+				return err
+			}
+			// send
+			if err = client.SendTransaction(context.Background(), signedTx); err != nil {
+				log.Error("Failed to send preMint token to random account", "err", err)
+				return err
+			}
+			lastHash = signedTx.Hash()
+			nonce++
+		}
+	}
+	waitForTx(lastHash, client)
+	return nil
+}
+
+func pack1155TokenTransferFromData(from, to common.Address) []byte {
+	data := make([]byte, 548)
+
+	// sig: safeBatchTransferFrom
+	sig, _ := hex.DecodeString(ERC1155TransferSig)
+	copy(data[:4], sig)
+
+	// copy first para: 'from'
+	fromBytes := from.Bytes()
+	copy(data[36-len(fromBytes):36], fromBytes)
+	// copy second para: 'to'
+	toBytes := to.Bytes()
+	copy(data[68-len(fromBytes):68], toBytes)
+
+	// copy left
+	erc1155TransferBytes, _ := hex.DecodeString(erc1155BatchTransferFrom)
+	copy(data[68:], erc1155TransferBytes)
+
+	return data
+}
+
+func generateTransfer1155TokenTx(nonce uint64, token common.Address, account common.Address) *types.Transaction {
+	gasPrice := big.NewInt(10)
+	gasPrice.Mul(gasPrice, big.NewInt(params.GWei))
+
+	return types.NewTransaction(nonce, token, new(big.Int), ERC1155TransferTokenLimit, gasPrice, pack1155TokenTransferFromData(account, account))
+}
+
+func generateSignedERC1155TransferTransactions(total int, tokens []common.Address, accounts []*bind.TransactOpts, client *ethclient.Client) ([]*types.Transaction, error) {
+	txs := make([]*types.Transaction, 0)
+	tokensLen, jobsPerThreadTmp := len(tokens), total/len(accounts)
+
+	workFn := func(start, end int, data ...interface{}) ([]interface{}, error) {
+		id := uint64(start / jobsPerThreadTmp)
+		account := accounts[id]
+		nonce, err := client.PendingNonceAt(context.Background(), account.From)
+		if err != nil {
+			log.Error("Failed to get account nonce: %v", "err", err)
+			return nil, err
+		}
+
+		result := make([]interface{}, 0)
+		for i := 0; i < end-start; i++ {
+			tokenID := i % tokensLen
+			token := tokens[tokenID]
+			signedTx, err := account.Signer(account.From, generateTransfer1155TokenTx(nonce, token, account.From))
+			if err != nil {
+				log.Error("Failed to generate 2255 batch transfer transaction: %v", "account", account.From, "err", err)
+				return nil, err
+			}
+			result = append(result, signedTx)
+			nonce++
+		}
+		return result, nil
+	}
+	result := concurrentWork(len(accounts), total, workFn, nil)
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	for _, tx := range result {
+		txs = append(txs, tx.(*types.Transaction))
+	}
+	return txs, nil
+}
+
+func mintTokenRR(tokens []common.Address, accounts []*bind.TransactOpts, client *ethclient.Client) (map[common.Address]uint64, error) {
 	var lastHash common.Hash
 	tokenID := make(map[common.Address]uint64, len(tokens))
-	for _, token := range tokens {
-		startID, err := getTokenCurrentID(token, client)
+	for i, token := range tokens {
+		owner := accounts[i].From
+		nonce, err := client.PendingNonceAt(context.Background(), owner)
+		if err != nil {
+			log.Error("Failed to get account nonce", "err", err)
+			return nil, err
+		}
+
+		startID, err := getTokenCurrentID(token, owner, client)
 		if err != nil {
 			return nil, err
 		}
 		tokenID[token] = startID
+
 		for _, account := range accounts {
-			signedTx, err := owner.Signer(owner.From, newMintERC721TokenTx(nonce, account.From, token))
+			signedTx, err := accounts[i].Signer(owner, newMintERC721TokenTx(nonce, account.From, token))
 			if err != nil {
 				log.Error("Failed to sign transaction", "from", account.From, "to", receiver,
 					"nonce", nonce, "error", err)
 				return nil, err
 			}
 			if err = client.SendTransaction(context.Background(), signedTx); err != nil {
-				utils.Fatalf("Failed to send minted token to random account: %v", err)
+				log.Error("Failed to send minted token to random account", "err", err)
 				return nil, err
 			}
 			lastHash = signedTx.Hash()
@@ -427,7 +614,7 @@ func generateTransferTokenTx(nonce uint64, token, to common.Address, id uint64) 
 	return types.NewTransaction(nonce, token, new(big.Int), tokenTransferLimit, gasPrice, packTokenTransferData(to, id))
 }
 
-func generateSignedTokenTransactions(total int, tokens []common.Address, accounts []*bind.TransactOpts, startIDs map[common.Address]uint64, client *ethclient.Client) ([]*types.Transaction, error) {
+func generateSignedERC721TransferTransactions(total int, tokens []common.Address, accounts []*bind.TransactOpts, startIDs map[common.Address]uint64, client *ethclient.Client) ([]*types.Transaction, error) {
 	txs := make([]*types.Transaction, 0)
 	tokensLen, jobsPerThreadTmp := len(tokens), total/len(accounts)
 	workFn := func(start, end int, data ...interface{}) ([]interface{}, error) {
@@ -435,7 +622,7 @@ func generateSignedTokenTransactions(total int, tokens []common.Address, account
 		account := accounts[id]
 		currentNonce, err := client.PendingNonceAt(context.Background(), account.From)
 		if err != nil {
-			utils.Fatalf("Failed to get account nonce: %v", err)
+			log.Error("Failed to get account nonce", "err", err)
 			return nil, err
 		}
 
@@ -481,7 +668,7 @@ func generateSignedTransferTransactions(total int, accounts []*bind.TransactOpts
 		account := accounts[start/(total/len(accounts))]
 		currentNonce, err := client.PendingNonceAt(context.Background(), account.From)
 		if err != nil {
-			utils.Fatalf("Failed to get account nonce: %v", err)
+			log.Error("Failed to get account nonce", "err", err)
 			return nil, err
 		}
 
@@ -523,7 +710,7 @@ func generateSignedTransferTransactionsRR(total int, accounts []*bind.TransactOp
 	for _, account := range accounts {
 		currentNonce, err := client.PendingNonceAt(context.Background(), account.From)
 		if err != nil {
-			utils.Fatalf("Failed to get account nonce: %v", err)
+			log.Error("Failed to get account nonce", "err", err)
 			return nil, err
 		}
 		accountsNonce[account.From] = currentNonce
@@ -569,8 +756,10 @@ func stressSendTransactions(txs []*types.Transaction, threads int, clients []*et
 
 		for i := start; i < end; i++ {
 			if err := c.SendTransaction(context.Background(), txs[i]); err != nil {
-				log.Error("send tx failed", "nonce", txs[i].Nonce(), "err", err)
-				return nil, err
+				if err.Error() != core.ErrAlreadyKnown.Error() && err.Error() != core.ErrReplaceUnderpriced.Error() {
+					log.Error("send tx failed", "err", err)
+					return nil, err
+				}
 			}
 		}
 
@@ -591,8 +780,10 @@ func stressSendTransactionsRR(txs []*types.Transaction, threads int, clients []*
 		for i := start; i < end; i++ {
 			c := clients[i%clientsLen]
 			if err := c.SendTransaction(context.Background(), txs[i]); err != nil {
-				log.Error("send tx failed", "err", err)
-				return nil, err
+				if err.Error() != core.ErrAlreadyKnown.Error() && err.Error() != core.ErrReplaceUnderpriced.Error() {
+					log.Error("send tx failed", "err", err)
+					return nil, err
+				}
 			}
 		}
 
