@@ -1,7 +1,7 @@
 # Peculiar
 
 ## Introduction to  Peculiar
- Peculiar is a decentralized, high-efficiency and energy-saving ***permission public chain*** which bases on `go-ethereum` and `heco-chain`. It is compatible with smart contracts and supports high-performance transactions. The endogenous token of Peculiar is `PEC` and it adopts the `HPoS` consensus mechanism. Peculiar will continue to improve the efficiency of Ethereum by Layer2, which will supplement and empower the Ethereum ecosystem.
+ Peculiar is a decentralized, high-efficiency and energy-saving ***permission public chain*** which bases on `go-ethereum` and `heco-chain`. It is compatible with smart contracts and supports high-performance transactions. The endogenous token of Peculiar is `QYC` and it adopts the `PoSA` consensus mechanism. Peculiar will continue to improve the efficiency of Ethereum by Layer2, which will supplement and empower the Ethereum ecosystem.
 
 ## Declaration
 To help developers’ evolvement at every stage 
@@ -10,7 +10,7 @@ To help developers’ evolvement at every stage
 Technological innovation is the driving force behind the advancement of the blockchain industry, but many innovative projects have been misunderstood and ignored at their early stages. We have witnessed the growth process of great projects. Recalling that Ethereum and Polkadot were questioned as altcoins in the early days, they all went through difficult times. Therefore, Peculiar's mission is not only a public chain, but also to focus on the discovery and support of high-potential developers and innovative projects. Relying on the world's largest trading ecosystem, Peculiar is committed to becoming the birthplace of innovative technologies and innovative businesses, and building a complete ecological loop of technology development, application promotion, and trading.
 
 ## Peculiar’s Performance
-- TPS: 2000+
+- TPS: `2000+` in normal transactions, `200+` in NFT transactions
 - Average block interval: 3s
 
 ## Consensus Mechanism
@@ -19,9 +19,9 @@ Technological innovation is the driving force behind the advancement of the bloc
 The maximum number of validators supported is 21.
 
 ## Economic Model 
-The endogenous token on the chain is `PEC`; the transactions consume `PEC` as gas fee.
+The endogenous token on the chain is `QYC`; the transactions consume `QYC` as gas fee.
 
-Miners pledge HT to become validator nodes. The reward of nodes is gas fee, which is distributed according to the mortgage proportion. 
+Miners pledge QYC to become validator nodes. The reward of nodes is gas fee, which is distributed according to the mortgage proportion. 
 
 ## Cross-Chain
 Assets such as BTC, ETH and stable coins can be mapped to Peculiar by an asset bridge. The realization method is to lock a certain amount of tokens on the original chain then generate a corresponding number of tokens on Peculiar. 
@@ -38,33 +38,21 @@ The meta-transaction function is supported, which allows users to reduce gas fee
 - Support cross-chain asset transfer to optimize users’ experience.
 
 
-## Resources of Peculiar
+## Resources of Qiyichain(Peculiar)
 
 ### Official Website
-- https://www.qiyichain.com
-
-### Development document
-
-- https://www.qiyichain.com/dev/document
+- https://chain.qiyihuo.com
 
 ### Chain ID
 - Mainnet chainid : `2285`
 - Testnet chainid : `12285`
 
 ### Mainnet Blockchain Explorer
-- https://scan.qiyichain.com
+- https://explorer.qiyihuo.com
 
 ### Testnet Blockchain Explorer
 
-- https://testnet-scan.qiyichain.com
-
-### Testnet Coin Faucet
-
-- https://testnet-scan.qiyichain.com/faucet
-
-### Technical Support Email
-
-- tech@qiyichain.com
+- https://explorer-test.rarefy.vip
 
 ## Risk Warning
 - All users and developers can participate in the current test environment and subsequent stages of Peculiar for free, and there is no charging scenario.
