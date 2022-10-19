@@ -41,14 +41,14 @@ The meta-transaction function is supported, which allows users to reduce gas fee
 ## Resources of Qiyichain(Peculiar)
 
 ### Official Website
-- https://chain.qiyihuo.com
+- https://www.qiyichain.cn
 
 ### Chain ID
 - Mainnet chainid : `2285`
 - Testnet chainid : `12285`
 
 ### Mainnet Blockchain Explorer
-- https://explorer.qiyihuo.com
+- https://explorer.qiyichain.cn
 
 ### Testnet Blockchain Explorer
 
