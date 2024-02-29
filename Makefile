@@ -6,7 +6,7 @@
 
 GOBIN = ./build/bin
 GO ?= latest
-GORUN = env GO111MODULE=on go run
+GORUN = env GO111MODULE=on GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go run
 
 geth:
 	$(GORUN) build/ci.go install ./cmd/geth
